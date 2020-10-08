@@ -1,11 +1,10 @@
-/* ADC1 Example
+/*=============================================================================
+ * Author: ctrinidad
+ * Date: 2020/09/27
+ *===========================================================================*/
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
+/*=====[Inclusions of function dependencies]=================================*/
 
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -13,98 +12,23 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 #include "driver/adc.h"
+#include "../inc/app_adc.h"
 #include "esp_adc_cal.h"
 #include "driver/timer.h"
-#include "../inc/adc.h"
 
-// ADC
-#define DEFAULT_VREF    1100        //Use adc2_vref_to_gpio() to obtain a better estimate
-#define NO_OF_SAMPLES   64          //Multisampling
+/*=====[Definition macros of private constants]==============================*/
 
-static esp_adc_cal_characteristics_t *adc_chars;
-static const adc_channel_t channel = ADC_CHANNEL_6;     //GPIO34 if ADC1, GPIO14 if ADC2
-static const adc_atten_t atten = ADC_ATTEN_DB_11;
-static const adc_unit_t unit = ADC_UNIT_1;
+/*=====[Definitions of extern global variables]==============================*/
 
-uint32_t i = 0;
-uint32_t sum_voltage = 0;
-uint32_t rms = 0;
+uint32_t Vp = 0, Vs = 0, Ip = 0, Is = 0;
 
-static void app_timer_init(timer_idx_t timer_idx,
-    bool auto_reload, double timer_interval_usec, TaskHandle_t *Taskptr);
+/*=====[Definitions of public global variables]==============================*/
 
-/*
- * A sample structure to pass events
- * from the timer interrupt handler to the main program.
- */
-typedef struct {
-    timer_idx_t timer_idx;
-    TaskHandle_t Taskptr;
-} timer_event_t;
+/*=====[Definitions of private global variables]=============================*/
 
-/*
- * The main task of this example program
- */
-void periodic_task(void *arg)
-{
-	uint32_t adc_reading = 0;
+static adc_t adc[ADC_CHANNELS];
 
-    while (1) {
-    	xTaskNotifyWait(0x00, 0xffffffff, NULL, portMAX_DELAY);
-
-        // ADC processing
-        adc_reading = adc1_get_raw((adc1_channel_t)channel);
-
-        //Convert adc_reading to voltage in mV
-        uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc_chars);
-
-        /*voltage = voltage * voltage;
-        sum_voltage += voltage;
-        i++;
-        if (i == (20000 / (TIMER_INTERVAL0_USEC))){
-        	i = 0;
-        	sum_voltage /= (20000 / (TIMER_INTERVAL0_USEC));
-        	//printf("%d\n", sum_voltage);
-        	rms = sqrt(sum_voltage);
-        	sum_voltage = 0;
-        	//printf("%d\n", rms);
-        }*/
-        sum_voltage += voltage;
-        i++;
-        if (i == 20) {
-        	i = 0;
-        	rms = sum_voltage/20;
-        	sum_voltage = 0;
-        }
-    }
-}
-
-// TMR
-#define TIMER_DIVIDER         16  //  Hardware timer clock divider
-#define TIMER_SCALE           (TIMER_BASE_CLK / TIMER_DIVIDER)  // convert counter value to seconds
-#define TIMER_INTERVAL0_USEC  (200)    // test interval for the timer in us
-#define TEST_WITHOUT_RELOAD   0        // testing will be done without auto reload
-#define TEST_WITH_RELOAD      1        // testing will be done with auto reload
-
-void adc_init(void)
-{
-	TaskHandle_t handle_periodic_task;
-
-    //Configure ADC
-    if (unit == ADC_UNIT_1) {
-        adc1_config_width(ADC_WIDTH_BIT_12);
-        adc1_config_channel_atten(channel, atten);
-    } else {
-        adc2_config_channel_atten((adc2_channel_t)channel, atten);
-    }
-
-    //Characterize ADC
-    adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
-    esp_adc_cal_characterize(unit, atten, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
-
-	xTaskCreate(periodic_task, "timer_periodic_task", 2048, NULL, 5, &handle_periodic_task);
-	app_timer_init((timer_idx_t) TIMER_0, TEST_WITH_RELOAD, TIMER_INTERVAL0_USEC, &handle_periodic_task);
-}
+/*=====[Definitions of internal functions]===================================*/
 
 /*
  * Timer group0 ISR handler
@@ -178,33 +102,87 @@ static void app_timer_init(timer_idx_t timer_idx,
     timer_start(TIMER_GROUP_0, timer_idx);
 }
 
-
 /*
-static void check_efuse()
+ * The main task of this example program
+ */
+void periodic_task(void *arg)
 {
-    //Check TP is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_TP) == ESP_OK) {
-        printf("eFuse Two Point: Supported\n");
-    } else {
-        printf("eFuse Two Point: NOT supported\n");
-    }
+	uint32_t adc_reading = 0;
+	uint32_t voltage;
+	uint32_t i = 0;
+	uint32_t adcIndex = 0;
 
-    //Check Vref is burned into eFuse
-    if (esp_adc_cal_check_efuse(ESP_ADC_CAL_VAL_EFUSE_VREF) == ESP_OK) {
-        printf("eFuse Vref: Supported\n");
-    } else {
-        printf("eFuse Vref: NOT supported\n");
+    while (1) {
+    	xTaskNotifyWait(0x00, 0xffffffff, NULL, portMAX_DELAY);
+
+        // ADC processing
+        adc_reading = adc1_get_raw((adc1_channel_t) adc[adcIndex].channel);
+
+        //Convert adc_reading to voltage in mV
+        voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc[adcIndex].adc_chars);
+
+        /*voltage = voltage * voltage;
+        adc[adcIndex].sum_voltage += voltage;
+        i++;
+        if (i == (20000 / (TIMER_INTERVAL0_USEC))){
+        	i = 0;
+        	adc[adcIndex].sum_voltage /= (20000 / (TIMER_INTERVAL0_USEC));
+        	//printf("%d\n", sum_voltage);
+        	rms = sqrt(sum_voltage);
+        	adc[adcIndex].sum_voltage = 0;
+        	//printf("%d\n", rms);
+        }*/
+        adc[adcIndex].sum_voltage += voltage;
+        i++;
+        if (i == 20) {
+        	i = 0;
+        	adc[adcIndex].rms = adc[adcIndex].sum_voltage/20;
+        	switch(adcIndex){
+				case 0:
+					Vp = adc[adcIndex].rms;
+					break;
+				case 1:
+					Vs = adc[adcIndex].rms;
+					break;
+				case 2:
+					Ip = adc[adcIndex].rms;
+					break;
+				case 3:
+					Is = adc[adcIndex].rms;
+					break;
+        	}
+        	adc[adcIndex].sum_voltage = 0;
+        	if (adcIndex == ADC_CHANNELS-1) adcIndex = 0;
+        	else adcIndex++;
+        }
     }
 }
 
-static void print_char_val_type(esp_adc_cal_value_t val_type)
+/*=====[Definitions of external functions]===================================*/
+
+void appAdcInit(void)
 {
-    if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP) {
-        printf("Characterized using Two Point Value\n");
-    } else if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
-        printf("Characterized using eFuse Vref\n");
-    } else {
-        printf("Characterized using Default Vref\n");
-    }
+	TaskHandle_t handle_periodic_task;
+	uint32_t adcIndex = 0;
+
+	adc[0].channel = (adc_channel_t) PV_CH;
+	adc[1].channel = (adc_channel_t) PC_CH;
+	adc[2].channel = (adc_channel_t) SV_CH;
+	adc[3].channel = (adc_channel_t) SC_CH;
+
+	for (adcIndex = 0; adcIndex < ADC_CHANNELS; adcIndex++)
+	{
+		//Configure ADC
+		adc1_config_width(ADC_WIDTH_BIT_12);
+		adc1_config_channel_atten(adc[adcIndex].channel, (adc_atten_t) ATTEN);
+
+		//Characterize ADC
+		adc[adcIndex].adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
+		esp_adc_cal_characterize((adc_unit_t) ADC_UNIT_1, (adc_atten_t) ATTEN, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc[adcIndex].adc_chars);
+	}
+
+	xTaskCreate(periodic_task, "timer_periodic_task", 2048, NULL, 5, &handle_periodic_task);
+	app_timer_init((timer_idx_t) TIMER_0, TEST_WITH_RELOAD, TIMER_INTERVAL0_USEC, &handle_periodic_task);
 }
-*/
+
+
