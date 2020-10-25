@@ -11,18 +11,22 @@
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
 #include "driver/gpio.h"
 #include "driver/timer.h"
 
-//#define USE_DMA
+#define USE_DMA
+
+#define SAMPLES_IN_20MS		128 // Amount of samples in 20 ms (power line period)
+#define AMOUNT_OF_CYLCES	8   // Amount of cycles to sample ()
 
 //i2s sample rate
-#define I2S_SAMPLE_RATE   (8000)
+#define I2S_SAMPLE_RATE   	(SAMPLES_IN_20MS*50) // 50 = 1/20ms
 
 //I2S read buffer length
-#define I2S_READ_LEN      (1024)
+#define I2S_READ_LEN      	(SAMPLES_IN_20MS*AMOUNT_OF_CYLCES)
 
 
 // TMR
@@ -44,19 +48,35 @@
 #define PC_CH ADC1_CHANNEL_5
 #define ATTEN ADC_ATTEN_DB_11
 
+#define ZER0        1300 // mV
+#define GAIN_230V    300
+#define GAIN_30V     100
+#define GAIN_800mA   100 // Primary current
+#define GAIN_1500mA  100 // Secondary current
+
 typedef enum {
 	PV, PC, SV, SC
 } adc_ch_t;
 
 void appAdcInit(void);
 
-extern uint32_t Vp, Vs, Ip, Is;
-
 typedef struct {
 	adc_channel_t channel;
 	uint32_t sum_voltage;
-	uint32_t rms;
+	uint32_t *rms;
+	int32_t gain; // x100
 } adc_t;
+
+typedef struct {
+	uint32_t Vp;
+	uint32_t Vs;
+	uint32_t Ip;
+	uint32_t Is;
+} rms_t;
+
+/////////////////////
+extern QueueHandle_t rms_queue;
+/////////////////////
 
 /*
  * A sample structure to pass events

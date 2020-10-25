@@ -9,6 +9,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "esp32/rom/ets_sys.h"
 #include "unistd.h"
 #include "sapi_convert.h"
 
@@ -37,19 +38,14 @@ inline void lcdENClear(void){
 inline void lcdRWClear( void ) {};   // RW = 0 for write
 
 inline void lcdDelay_us( uint32_t time ){
-	usleep(time);
+	ets_delay_us(time);
 }
 
-inline void lcdCommandDelay(void){
-	usleep(2000);
-}
-
-inline void lcdDataDelay(void){
-	usleep(50);
-}
+#define lcdCommandDelay()           lcdDelay_us(LCD_CMD_WAIT_US)
+#define lcdDataDelay()              lcdDelay_us(LCD_CMD_WAIT_US)
 
 inline void lcdDelay_ms( uint32_t time ){
-	vTaskDelay(time / portTICK_PERIOD_MS);
+	ets_delay_us(time*1000);//vTaskDelay(time / portTICK_PERIOD_MS);//
 }
 
 inline void lcdBoardInit( lcd_set_t lcd_set )

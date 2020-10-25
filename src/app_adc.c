@@ -10,18 +10,17 @@
 #include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "driver/gpio.h"
+#include "freertos/queue.h"
 #include "driver/adc.h"
-#include "../inc/app_adc.h"
 #include "esp_adc_cal.h"
 #include "driver/timer.h"
 #include "driver/i2s.h"
+#include "esp_err.h"
+#include "../inc/app_adc.h"
 
 /*=====[Definition macros of private constants]==============================*/
 
 /*=====[Definitions of extern global variables]==============================*/
-
-uint32_t Vp = 0, Vs = 0, Ip = 0, Is = 0;
 
 /*=====[Definitions of public global variables]==============================*/
 
@@ -29,6 +28,8 @@ uint32_t Vp = 0, Vs = 0, Ip = 0, Is = 0;
 
 static adc_t adc[ADC_CHANNELS];
 static esp_adc_cal_characteristics_t *adc_chars;
+static rms_t rms;
+QueueHandle_t rms_queue;
 
 /*=====[Definitions of internal functions]===================================*/
 
@@ -42,10 +43,10 @@ void appAdcDmaInit()
         .sample_rate =  I2S_SAMPLE_RATE,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
 	    .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
-	    .channel_format = I2S_CHANNEL_FMT_ALL_LEFT,
+	    .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
 	    .intr_alloc_flags = 0,
-	    .dma_buf_count = 2,
-	    .dma_buf_len = 1024,
+	    .dma_buf_count = 2, // Debe ser > 1
+	    .dma_buf_len = I2S_READ_LEN,
 	    .use_apll = 0,
 	 };
 
@@ -56,51 +57,52 @@ void appAdcDmaInit()
 	 i2s_set_adc_mode(ADC_UNIT_1, adc[0].channel);
 }
 
-void adc_dma(void*arg)
+void adc_dma_task(void*arg)
 {
 
     size_t bytes_read;
-    uint32_t i;
+    uint32_t i, j;
     uint32_t adcIndex = 0;
 
     // Read from ADC and save
     uint16_t* i2s_read_buff = i2s_read_buff_;
 
     while (1) {
-		i2s_adc_enable(I2S_NUM_0);
 
 		//read data from I2S bus, in this case, from ADC.
-		i2s_read(I2S_NUM_0, (uint16_t*) i2s_read_buff, I2S_READ_LEN * sizeof(uint16_t), &bytes_read, portMAX_DELAY);
+		if (i2s_read(I2S_NUM_0, (uint16_t*) i2s_read_buff, I2S_READ_LEN * sizeof(uint16_t), &bytes_read, 300 / portTICK_PERIOD_MS) == ESP_OK) {
 
-		i2s_adc_disable(I2S_NUM_0);
+			i2s_adc_disable(I2S_NUM_0);
 
-		for (i=0;i<I2S_READ_LEN;i++){
-			uint16_t voltage = esp_adc_cal_raw_to_voltage(i2s_read_buff_[i] & 0x0FFF, adc_chars);
-			adc[adcIndex].sum_voltage += voltage;
+			*adc[adcIndex].rms = 0;
+
+			for (j=0; j<AMOUNT_OF_CYLCES; j++) {
+				for (i=0; i<SAMPLES_IN_20MS; i++) {
+					i2s_read_buff_[i+SAMPLES_IN_20MS*j] = esp_adc_cal_raw_to_voltage(i2s_read_buff_[i+SAMPLES_IN_20MS*j] & 0x0FFF, adc_chars);
+					int16_t voltage = i2s_read_buff_[i+SAMPLES_IN_20MS*j];
+					voltage -= ZER0;
+					voltage = voltage * 100 / adc[adcIndex].gain;
+					adc[adcIndex].sum_voltage += voltage * voltage;
+				}
+				adc[adcIndex].sum_voltage /= SAMPLES_IN_20MS;
+				*adc[adcIndex].rms += sqrt(adc[adcIndex].sum_voltage);
+			}
+
+			*adc[adcIndex].rms /= AMOUNT_OF_CYLCES;
+
+			adc[adcIndex].sum_voltage = 0;
+			if (adcIndex == ADC_CHANNELS-1) {
+				adcIndex = 0;
+				xQueueSend( rms_queue, ( void * ) &rms, ( TickType_t ) 0 );
+			}
+			else adcIndex++;
 		}
-
-		adc[adcIndex].rms = adc[adcIndex].sum_voltage/I2S_READ_LEN;
-		switch(adcIndex){
-			case 0:
-				Vp = adc[adcIndex].rms;
-				break;
-			case 1:
-				Vs = adc[adcIndex].rms;
-				break;
-			case 2:
-				Ip = adc[adcIndex].rms;
-				break;
-			case 3:
-				Is = adc[adcIndex].rms;
-				break;
+		else
+		{
+			i2s_adc_disable(I2S_NUM_0);
 		}
-		adc[adcIndex].sum_voltage = 0;
-		if (adcIndex == ADC_CHANNELS-1) adcIndex = 0;
-		else adcIndex++;
-
 		i2s_set_adc_mode(ADC_UNIT_1, adc[adcIndex].channel);
-
-        vTaskDelay(100 / portTICK_PERIOD_MS);
+		i2s_adc_enable(I2S_NUM_0);
     }
 
     vTaskDelete(NULL);
@@ -250,15 +252,29 @@ void appAdcInit(void)
 	adc[1].channel = (adc_channel_t) PC_CH;
 	adc[2].channel = (adc_channel_t) SV_CH;
 	adc[3].channel = (adc_channel_t) SC_CH;
+	adc[0].rms = &rms.Vp;
+	adc[1].rms = &rms.Ip;
+	adc[2].rms = &rms.Vs;
+	adc[3].rms = &rms.Is;
+	adc[0].gain = GAIN_230V;
+	adc[1].gain = GAIN_800mA;
+	adc[2].gain = GAIN_30V;
+	adc[3].gain = GAIN_1500mA;
 
 	adc1_config_width(ADC_WIDTH_BIT_12);
 
 	for (adcIndex = 0; adcIndex < ADC_CHANNELS; adcIndex++)
 	{
 		adc[adcIndex].sum_voltage = 0;
-		adc[adcIndex].rms = 0;
+		*adc[adcIndex].rms = 0;
 		//Configure ADC
 		adc1_config_channel_atten(adc[adcIndex].channel, (adc_atten_t) ATTEN);
+	}
+
+	rms_queue = xQueueCreate(1, sizeof(rms_t));
+	if( rms_queue == NULL )
+	{
+		/* Queue was not created and must not be used. */
 	}
 
 	//Characterize ADC
@@ -267,7 +283,7 @@ void appAdcInit(void)
 
 #ifdef USE_DMA
 	appAdcDmaInit();
-	xTaskCreate(adc_dma, "adc_dma", 1024 * 2, NULL, 5, NULL);
+	xTaskCreate(adc_dma_task, "adc_dma_task", 1024 * 4, NULL, 5, NULL);
 #else
 	xTaskCreate(periodic_task, "timer_periodic_task", 2048, NULL, 5, &handle_periodic_task);
 	app_timer_init((timer_idx_t) TIMER_0, TEST_WITH_RELOAD, TIMER_INTERVAL0_USEC, &handle_periodic_task);

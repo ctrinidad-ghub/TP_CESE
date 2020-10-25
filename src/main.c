@@ -17,6 +17,7 @@
 #include "esp_event_loop.h"
 #include "nvs_flash.h"
 #include "../inc/app_lcd.h"
+#include "../inc/app_fsm.h"
 
 /*=====[Definition macros of private constants]==============================*/
 
@@ -43,4 +44,7 @@ void app_main()
 
 	// Inicializar ADC
 	appAdcInit( );
+
+	// Inicializar FSM principal
+	appFsmInit( );
 }

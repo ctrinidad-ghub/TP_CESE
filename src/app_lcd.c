@@ -10,6 +10,7 @@
 #include "freertos/task.h"
 #include "esp_system.h"
 #include "driver/gpio.h"
+#include "freertos/queue.h"
 #include "../inc/sapi_lcd.h"
 #include "../inc/app_lcd.h"
 #include "../inc/app_adc.h"
@@ -21,7 +22,7 @@
 
 #define WELCOME_1  "+------------------+"
 #define WELCOME_2  "|  Trabajo  Final  |"
-#define WELCOME_3  "|       PCSE       |"
+#define WELCOME_3  "|       CESE       |"
 #define WELCOME_4  "+------------------+"
 
 #define PPAL_1  "Caracterizando trafo"
@@ -39,28 +40,22 @@ TaskHandle_t xHandle;
 
 /*=====[Definitions of internal functions]===================================*/
 
-void print_task(void *arg)
+void appLcd_task(void *arg)
 {
-	while(1) {
-		// Tension Primaria
-		lcdGoToXY(4,2);
-		lcdSendIntFixedDigit( Vp/10, V_CANT_DIG, 0 );
-		// Corriente Primaria
-		lcdGoToXY(14,2);
-		lcdSendIntFixedDigit( Ip, I_CANT_DIG, 0 );
-		// Tension Secundaria
-		lcdGoToXY(3,3);
-		lcdSendIntFixedDigit( Vs/10, V_CANT_DIG, 1 );
-		// Corriente Secundaria
-		lcdGoToXY(14,3);
-		lcdSendIntFixedDigit( Is, I_CANT_DIG, 0 );
+	lcd_config_t lcd_config;
+	rms_t rms;
 
-		vTaskDelay(1000 / portTICK_PERIOD_MS);
-	}
-}
+	vTaskDelay(2000 / portTICK_PERIOD_MS);
 
-void appLcdInit_task(void *arg)
-{
+	// Inicializar LCD de 20x2 (caracteres x lineas) con cada caracter de 5x8 pixeles
+	lcd_config.lineWidth = 20 ;
+	lcd_config.amountOfLines = 4 ;
+	lcd_config.lcd_set = LCD_SET_4BITMODE_2LINE;
+	lcd_config.lcd_control = LCD_CONTROL_CURSOROFF_BLINKOFF;
+	lcd_config.lcd_entry_mode = LCD_ENTRY_MODE_LEFT;
+
+	lcdInit( &lcd_config );
+
 	lcdSendString(WELCOME_1);
 	lcdSendString(WELCOME_2);
 	lcdSendString(WELCOME_3);
@@ -74,26 +69,27 @@ void appLcdInit_task(void *arg)
 	lcdSendString(PPAL_3);
 	lcdSendString(PPAL_4);
 
-	xTaskCreate(print_task, "print_task", 2048, NULL, 5, NULL);
+	while(1) {
+		xQueueReceive(rms_queue, &rms, portMAX_DELAY);
 
-	vTaskDelete( xHandle );
+		// Tension Primaria
+		lcdGoToXY(4,2);
+		lcdSendIntFixedDigit( rms.Vp, V_CANT_DIG, 0 );
+		// Corriente Primaria
+		lcdGoToXY(14,2);
+		lcdSendIntFixedDigit( rms.Ip, I_CANT_DIG, 0 );
+		// Tension Secundaria
+		lcdGoToXY(3,3);
+		lcdSendIntFixedDigit( rms.Vs/10, V_CANT_DIG, 1 );
+		// Corriente Secundaria
+		lcdGoToXY(14,3);
+		lcdSendIntFixedDigit( rms.Is, I_CANT_DIG, 0 );
+	}
 }
 
 /*=====[Definitions of external functions]===================================*/
 
 void appLcdInit(void)
 {
-	// Initialize NVS
-	lcd_config_t lcd_config;
-
-	// Inicializar LCD de 20x2 (caracteres x lineas) con cada caracter de 5x8 pixeles
-	lcd_config.lineWidth = 20 ;
-	lcd_config.amountOfLines = 4 ;
-	lcd_config.lcd_set = LCD_SET_4BITMODE_2LINE;
-	lcd_config.lcd_control = LCD_CONTROL_CURSOROFF_BLINKOFF;
-	lcd_config.lcd_entry_mode = LCD_ENTRY_MODE_LEFT;
-
-	lcdInit( &lcd_config );
-
-	xTaskCreate(appLcdInit_task, "appLcdInit_task", 2048, NULL, 5, &xHandle);
+	xTaskCreate(appLcd_task, "appLcd_task", 2048, NULL, 5, &xHandle);
 }
