@@ -18,6 +18,7 @@
 #include "nvs_flash.h"
 #include "../inc/app_lcd.h"
 #include "../inc/app_fsm.h"
+#include "../inc/app_uart.h"
 
 /*=====[Definition macros of private constants]==============================*/
 
@@ -44,6 +45,9 @@ void app_main()
 
 	// Inicializar ADC
 	appAdcInit( );
+
+	// Inicializar UART
+	appUart();
 
 	// Inicializar FSM principal
 	appFsmInit( );
