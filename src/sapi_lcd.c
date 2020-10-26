@@ -66,6 +66,16 @@ static void lcdEnablePulse( void )
    lcdENClear( );      // EN = 0 for H-to-L pulse
 }
 
+void lcdCommandNibble( uint8_t cmd )
+{
+	lcdSendNibble( cmd & 0xF0 );          // Send high nibble to D7-D4
+
+	lcdRSClear( );   // RS = 0 for command
+	lcdRWClear( );   // RW = 0 for write
+
+	lcdEnablePulse();
+}
+
 void lcdCommand( uint8_t cmd )
 {
    if (lcd.lcd_config.lcd_set & LCD_8BITMODE) {
@@ -77,16 +87,9 @@ void lcdCommand( uint8_t cmd )
 	   lcdEnablePulse();
    } else
    {
-	   lcdSendNibble( cmd & 0xF0 );          // Send high nibble to D7-D4
-
-	   lcdRSClear( );   // RS = 0 for command
-	   lcdRWClear( );   // RW = 0 for write
-
-	   lcdEnablePulse();
+	   lcdCommandNibble( cmd & 0xF0 );
 	   lcdDelay_us( LCD_LOW_WAIT_US );       // Wait
-
-	   lcdSendNibble( cmd << 4 );            // Send low nibble to D7-D4
-	   lcdEnablePulse();
+	   lcdCommandNibble( cmd << 4 );
    }
 }
 
@@ -113,6 +116,27 @@ void lcdData( uint8_t data )
    }
 }
 
+void initByInstruction(void) {
+	if (lcd.lcd_config.lcd_set & LCD_8BITMODE) {
+		lcdCommand( 0x30 );
+	    lcdDelay_ms(5);
+	    lcdCommand( 0x30 );
+	    lcdDelay_us(150);
+	    lcdCommand( 0x30 );
+	    lcdDelay_us(40);
+	}
+	else {
+		lcdCommandNibble( 0x30 );
+	    lcdDelay_ms(5);
+	    lcdCommandNibble( 0x30 );
+	    lcdDelay_us(150);
+	    lcdCommandNibble( 0x30 );
+	    lcdDelay_us(40);
+	    lcdCommandNibble( LCD_FUNCTIONSET ); // Solo en 4BIT
+	    lcdCommandDelay();
+	}
+}
+
 void lcdInit( lcd_config_t *lcd_config )
 {
 	lcd.lineWidth = lcd_config->lineWidth; // Characters
@@ -126,10 +150,10 @@ void lcdInit( lcd_config_t *lcd_config )
 	lcdBoardInit(lcd.lcd_config.lcd_set);
 
 	if (lcd.lcd_config.lcd_set & LCD_8BITMODE) {
-		lcdSendNibble( 0 ); // D7-0 = 0
+		lcdSendPort( 0 ); // D7-0 = 0
 	}
 	else {
-		lcdSendPort( 0 ); // D7-4 = 0
+		lcdSendNibble( 0 ); // D7-4 = 0
 	}
 
 	lcdRWClear( );     // RW = 0
@@ -140,13 +164,9 @@ void lcdInit( lcd_config_t *lcd_config )
 	lcdDelay_ms(LCD_STARTUP_WAIT_MS);
 
 	// Initializing by Instruction
-    lcdCommand( 0x30 );
-    lcdDelay_us(100);
-    lcdDelay_ms(4);
-    lcdCommand( 0x30 );
-    lcdDelay_us(100);
-    lcdCommand( 0x30 );
-    lcdDelay_us(40);
+	// If the power supply conditions for correctly operating the internal reset circuit are not met,
+	// initialization by instructions becomes necessary.
+	initByInstruction();
 
 	// Function set - 4/8 bit mode
     lcdCommand( LCD_FUNCTIONSET | (lcd_config->lcd_set & LCD_8BITMODE) );

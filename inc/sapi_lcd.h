@@ -93,7 +93,7 @@ extern "C" {
 #define LCD_CLR_DISP_WAIT_MS   3     // - Clear Display 1.52 ms
 #define LCD_RET_HOME_WAIT_MS   3     // - Return Home  1.52 ms
 #define LCD_RBUSY_ADDR_WAIT_US 0     // - Read Busy flag and address 0 us
-#define LCD_STARTUP_WAIT_MS    1000   // Wait for more than 40 ms after VCC rises to 2.7 V
+#define LCD_STARTUP_WAIT_MS    3000   // Wait for more than 40 ms after VCC rises to 2.7 V
 
 /*==================[typedef]================================================*/
 
