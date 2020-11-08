@@ -55,9 +55,6 @@ static void appUart_task()
         len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE, 20 / portTICK_RATE_MS);
 
 		if (len != 0) {
-			if (*data == 'T') {
-				xSemaphoreGive(test_request);
-			}
 			if (*data == 'C' && *(data+1) == 'o') {
 				xSemaphoreGive(config_request);
 			}

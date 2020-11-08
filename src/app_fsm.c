@@ -14,15 +14,17 @@
 #include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "../inc/app_fsm.h"
+#include "../inc/teclas.h"
 
 /*=====[Definition macros of private constants]==============================*/
 
 // GPIO
 #define GPIO_OUTPUT_PIN_SEL  (1ULL<<CPV | 1ULL<<CSV)
+#define GPIO_INPUT_PIN_SEL   (1ULL<<pCan)
 
 /*=====[Definitions of extern global variables]==============================*/
 
-SemaphoreHandle_t test_request;
+tTecla tecla_test;
 SemaphoreHandle_t config_request;
 SemaphoreHandle_t cancel_request;
 
@@ -103,6 +105,17 @@ static void trafoPinInit( void )
 
     //configure GPIO with the given settings
     gpio_config(&io_conf);
+
+    //interrupt of rising edge
+    io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
+    //bit mask of the pins, use GPIO4/5 here
+    io_conf.pin_bit_mask = GPIO_INPUT_PIN_SEL;
+    //set as input mode
+    io_conf.mode = GPIO_MODE_INPUT;
+    //enable pull-up mode
+    io_conf.pull_up_en = 1;
+
+    gpio_config(&io_conf);
 }
 
 void connect_primary(void)
@@ -124,7 +137,7 @@ void disconnect_primary_secondary(void) // disconnect primary secondary
 }
 
 void check_semaphores(void) {
-	if (xSemaphoreTake(test_request, 0) == pdTRUE)
+	if (xSemaphoreTake(tecla_test.request, 0) == pdTRUE)
 		test_pushed = 1;
 	else
 		test_pushed = 0;
@@ -168,6 +181,19 @@ void checkTafo_task (void*arg)
 	}
 }
 
+void tarea_tecla( void* taskParmPtr )
+{
+
+	fsmButtonInit( &tecla_test, pCan );
+
+	while( 1 )
+	{
+		fsmButtonUpdate( &tecla_test );
+
+		vTaskDelay( BUTTON_RATE );
+	}
+}
+
 void fsm_task (void*arg)
 {
 	disconnect_primary_secondary();
@@ -175,7 +201,6 @@ void fsm_task (void*arg)
 	deviceControl.test_state = STARTUP;
 
 	// Create semaphores
-	test_request = xSemaphoreCreateBinary();
 	config_request = xSemaphoreCreateBinary();
 	cancel_request = xSemaphoreCreateBinary();
 	checkTafo_semphr = xSemaphoreCreateBinary();
@@ -309,4 +334,5 @@ void appFsmInit( void )
 	trafoPinInit( );
 
 	xTaskCreate(fsm_task, "fsm_task", 1024 * 2, NULL, 5, NULL);
+	xTaskCreate(tarea_tecla, "tarea_tecla", 1024 * 2, NULL, 5, NULL);
 }
