@@ -34,6 +34,8 @@ int len;
 
 static void appUart_task()
 {
+	printer_msg_t printer_msg;
+
     /* Configure parameters of an UART driver,
      * communication pins and install the driver */
     uart_config_t uart_config = {
@@ -50,20 +52,23 @@ static void appUart_task()
     // Configure a temporary buffer for the incoming data
     uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
 
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+
     while (1) {
-        // Read data from the UART
+        /*// Read data from the UART
         len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE, 20 / portTICK_RATE_MS);
 
 		if (len != 0) {
-			if (*data == 'C' && *(data+1) == 'o') {
-				xSemaphoreGive(config_request);
-			}
-			if (*data == 'C' && *(data+1) == 'a') {
-				xSemaphoreGive(cancel_request);
-			}
-			// Write data back to the UART
-			uart_write_bytes(UART_NUM_2, (const char *) data, len);
-		}
+
+		}*/
+    	xQueueReceive(printer_queue, &printer_msg, portMAX_DELAY);
+    		*(data)= 0x01;
+    		*(data+1)= 0x41;
+    		*(data+2)= 0x0D;
+    		len = 3;
+    		uart_write_bytes(UART_NUM_2, (const char *) data, len);
+    		len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE, 5000 / portTICK_RATE_MS);
+
     }
 }
 

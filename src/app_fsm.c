@@ -15,21 +15,19 @@
 #include "driver/gpio.h"
 #include "../inc/app_fsm.h"
 #include "../inc/teclas.h"
+#include "../inc/app_lcd.h"
 
 /*=====[Definition macros of private constants]==============================*/
 
 // GPIO
 #define GPIO_OUTPUT_PIN_SEL  (1ULL<<CPV | 1ULL<<CSV)
-#define GPIO_INPUT_PIN_SEL   (1ULL<<pCan)
+#define GPIO_INPUT_PIN_SEL   (1ULL<<pCan | 1ULL<<pConf | 1ULL<<pTest)
 
 /*=====[Definitions of extern global variables]==============================*/
 
-tTecla tecla_test;
-SemaphoreHandle_t config_request;
-SemaphoreHandle_t cancel_request;
+tTecla tecla_test, tecla_Can, tecla_Conf;
 
-QueueHandle_t lcd_queue;
-QueueHandle_t checkTafo_queue;
+QueueHandle_t printer_queue;
 
 /*=====[Definitions of public global variables]==============================*/
 
@@ -74,7 +72,7 @@ typedef struct {
 typedef struct {
 	test_state_t test_state;
 	bool configurated;
-	lcd_msg_t lcd_msg;
+	printer_msg_t printer_msg;
 	trafoParameters_t trafoParameters;
 } deviceControl_t;
 
@@ -141,11 +139,11 @@ void check_semaphores(void) {
 		test_pushed = 1;
 	else
 		test_pushed = 0;
-	if (xSemaphoreTake(config_request, 0) == pdTRUE)
+	if (xSemaphoreTake(tecla_Conf.request, 0) == pdTRUE)
 		config_pushed = 1;
 	else
 		config_pushed = 0;
-	if (xSemaphoreTake(cancel_request, 0) == pdTRUE)
+	if (xSemaphoreTake(tecla_Can.request, 0) == pdTRUE)
 		cancel_pushed = 1;
 	else
 		cancel_pushed = 0;
@@ -163,19 +161,29 @@ bool configurate(void)
 
 void checkTafo_task (void*arg)
 {
+	rms_t rms;
+
 	while(1) {
 		xSemaphoreTake(checkTafo_semphr, portMAX_DELAY);
 
 		if (deviceControl.test_state == MEASURE_PRIMARY)
 		{
-			// Hacer algo
-			vTaskDelay(5000 / portTICK_PERIOD_MS);
+			for (int i=0; i<ADC_ITERATION; i++) {
+				appAdcStart(&rms);
+
+				appLcdSendRms(&rms);
+			}
+
 			xSemaphoreGive(checkTafoInProgress_semphr);
 		}
 		else if (deviceControl.test_state == MEASURE_SECONDARY)
 		{
-			// Hacer algo
-			vTaskDelay(5000 / portTICK_PERIOD_MS);
+			for (int i=0; i<ADC_ITERATION; i++) {
+				appAdcStart(&rms);
+
+				appLcdSendRms(&rms);
+			}
+
 			xSemaphoreGive(checkTafoInProgress_semphr);
 		}
 	}
@@ -184,10 +192,14 @@ void checkTafo_task (void*arg)
 void tarea_tecla( void* taskParmPtr )
 {
 
-	fsmButtonInit( &tecla_test, pCan );
+	fsmButtonInit( &tecla_Can, pCan );
+	fsmButtonInit( &tecla_Conf, pConf );
+	fsmButtonInit( &tecla_test, pTest );
 
 	while( 1 )
 	{
+		fsmButtonUpdate( &tecla_Can );
+		fsmButtonUpdate( &tecla_Conf );
 		fsmButtonUpdate( &tecla_test );
 
 		vTaskDelay( BUTTON_RATE );
@@ -201,8 +213,6 @@ void fsm_task (void*arg)
 	deviceControl.test_state = STARTUP;
 
 	// Create semaphores
-	config_request = xSemaphoreCreateBinary();
-	cancel_request = xSemaphoreCreateBinary();
 	checkTafo_semphr = xSemaphoreCreateBinary();
 	checkTafoInProgress_semphr = xSemaphoreCreateBinary();
 
@@ -210,10 +220,9 @@ void fsm_task (void*arg)
 	config_pushed = 0;
 	cancel_pushed = 0;
 	deviceControl.configurated = 0;
-	deviceControl.lcd_msg = WELCOME;
+	deviceControl.printer_msg = PRINTER_FAIL;
 
-	lcd_queue = xQueueCreate(1, sizeof(lcd_msg_t));
-	checkTafo_queue = xQueueCreate(1, sizeof(lcd_msg_t));
+	printer_queue = xQueueCreate(1, sizeof(printer_msg_t));
 
 	xTaskCreate(checkTafo_task, "checkTafo_task", 1024 * 2, NULL, 5, NULL);
 
@@ -227,12 +236,12 @@ void fsm_task (void*arg)
 		case STARTUP:
 			disconnect_primary_secondary();
 
-			deviceControl.lcd_msg = WELCOME;
-			xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+			appLcdSend(WELCOME);
+
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			deviceControl.lcd_msg = WAITING;
+
+			appLcdSend(WAITING);
 			deviceControl.test_state = WAIT_TEST;
-			xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
 			break;
 		case WAIT_TEST:
 			disconnect_primary_secondary();
@@ -240,39 +249,31 @@ void fsm_task (void*arg)
 			if (test_pushed){
 				if (isConfigurated()) {
 					deviceControl.test_state = POWER_UP_PRIMARY;
-					deviceControl.lcd_msg = MEASURING_PRIMARY;
-					xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+					appLcdSend(MEASURING_PRIMARY);
 				}
 				else {
 					deviceControl.test_state = ASK_FOR_CONFIGURATION;
-					deviceControl.lcd_msg = NOT_CONFIGURATED;
-					xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+					appLcdSend(NOT_CONFIGURATED);
 				}
 			}
 			if (config_pushed){
 				if(configurate()){
-					deviceControl.lcd_msg = CONFIGURATION_OK;
-					xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+					appLcdSend(CONFIGURATION_OK);
 					vTaskDelay(3000 / portTICK_PERIOD_MS);
-					deviceControl.lcd_msg = WAITING;
-					xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
-
+					appLcdSend(WAITING);
 				}
 				else {
-					deviceControl.lcd_msg = CONFIGURATION_FAIL;
-					xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+					appLcdSend(CONFIGURATION_FAIL);
 					vTaskDelay(3000 / portTICK_PERIOD_MS);
-					deviceControl.lcd_msg = WAITING;
-					xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+					appLcdSend(WAITING);
 				}
 			}
 			vTaskDelay(500 / portTICK_PERIOD_MS);
 			break;
 		case ASK_FOR_CONFIGURATION:
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			deviceControl.lcd_msg = WAITING;
+			appLcdSend(WAITING);
 			deviceControl.test_state = WAIT_TEST;
-			xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
 			break;
 		case POWER_UP_PRIMARY:
 			disconnect_primary_secondary();
@@ -296,8 +297,7 @@ void fsm_task (void*arg)
 			vTaskDelay(200 / portTICK_PERIOD_MS);
 			connect_secondary();
 			deviceControl.test_state = MEASURE_SECONDARY;
-			deviceControl.lcd_msg = MEASURING_SECONDARY;
-			xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+			appLcdSend(MEASURING_SECONDARY);
 			xSemaphoreGive(checkTafo_semphr);
 			break;
 		case MEASURE_SECONDARY:
@@ -311,12 +311,11 @@ void fsm_task (void*arg)
 			deviceControl.test_state = REPORT;
 			break;
 		case REPORT:
-			deviceControl.lcd_msg = REPORT_LCD;
-			xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+			appLcdSend(REPORT_LCD);
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			deviceControl.lcd_msg = WAITING;
 			deviceControl.test_state = WAIT_TEST;
-			xQueueSend( lcd_queue, ( void * ) &deviceControl.lcd_msg, ( TickType_t ) 0 );
+			appLcdSend(WAITING);
+			xQueueSend( printer_queue, ( void * ) &deviceControl.printer_msg, ( TickType_t ) 0 );
 			break;
 		default:
 			vTaskDelay(500 / portTICK_PERIOD_MS);

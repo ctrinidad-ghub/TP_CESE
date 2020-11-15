@@ -58,8 +58,6 @@ typedef enum {
 	PV, PC, SV, SC
 } adc_ch_t;
 
-void appAdcInit(void);
-
 typedef struct {
 	adc_channel_t channel;
 	uint32_t sum_voltage;
@@ -74,9 +72,8 @@ typedef struct {
 	uint32_t Is;
 } rms_t;
 
-/////////////////////
-extern QueueHandle_t rms_queue;
-/////////////////////
+void appAdcInit(void);
+void appAdcStart(rms_t *rms);
 
 /*
  * A sample structure to pass events

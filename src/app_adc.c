@@ -10,6 +10,7 @@
 #include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/semphr.h"
 #include "freertos/queue.h"
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
@@ -29,7 +30,8 @@
 static adc_t adc[ADC_CHANNELS];
 static esp_adc_cal_characteristics_t *adc_chars;
 static rms_t rms;
-QueueHandle_t rms_queue;
+static QueueHandle_t adc_queue;
+static SemaphoreHandle_t startConv;
 
 /*=====[Definitions of internal functions]===================================*/
 
@@ -55,6 +57,20 @@ void appAdcDmaInit()
 
 	 //init ADC pad
 	 i2s_set_adc_mode(ADC_UNIT_1, adc[0].channel);
+}
+
+void appAdcStart(rms_t *rms)
+{
+	rms_t rms_;
+
+	// Start conversion
+	xSemaphoreGive(startConv);
+
+	xQueueReceive(adc_queue, &rms_, portMAX_DELAY);
+	rms->Vp = rms_.Vp;
+	rms->Ip = rms_.Ip;
+	rms->Vs = rms_.Vs;
+	rms->Is = rms_.Is;
 }
 
 void adc_dma_task(void*arg)
@@ -93,7 +109,8 @@ void adc_dma_task(void*arg)
 			adc[adcIndex].sum_voltage = 0;
 			if (adcIndex == ADC_CHANNELS-1) {
 				adcIndex = 0;
-				xQueueSend( rms_queue, ( void * ) &rms, ( TickType_t ) 0 );
+				xQueueSend( adc_queue, ( void * ) &rms, ( TickType_t ) 0 );
+				xSemaphoreTake(startConv, portMAX_DELAY);
 			}
 			else adcIndex++;
 		}
@@ -271,11 +288,13 @@ void appAdcInit(void)
 		adc1_config_channel_atten(adc[adcIndex].channel, (adc_atten_t) ATTEN);
 	}
 
-	rms_queue = xQueueCreate(1, sizeof(rms_t));
-	if( rms_queue == NULL )
+	adc_queue = xQueueCreate(1, sizeof(rms_t));
+	if( adc_queue == NULL )
 	{
 		/* Queue was not created and must not be used. */
 	}
+
+	startConv = xSemaphoreCreateBinary();
 
 	//Characterize ADC
 	adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));

@@ -5,16 +5,7 @@
 
 /*=====[Inclusions of function dependencies]=================================*/
 
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
-#include "driver/gpio.h"
-#include "freertos/queue.h"
-#include "../inc/sapi_lcd.h"
 #include "../inc/app_lcd.h"
-#include "../inc/app_adc.h"
-#include "../inc/app_fsm.h"
 
 /*=====[Definition macros of private constants]==============================*/
 
@@ -75,7 +66,8 @@
 
 /*=====[Definitions of private global variables]=============================*/
 
-TaskHandle_t xHandle;
+static QueueHandle_t lcd_queue;
+static QueueHandle_t rms_queue;
 
 /*=====[Definitions of internal functions]===================================*/
 
@@ -157,43 +149,51 @@ void appLcd_task(void *arg)
 			}
 		}
 
-		switch(msg) {
-		case MEASURING_PRIMARY:
-			xQueueReceive(rms_queue, &rms, portMAX_DELAY);
+		if (xQueueReceive(rms_queue, &rms, 0) == pdTRUE) {
+			switch(msg) {
+			case MEASURING_PRIMARY:
+				// Tension Primaria
+				lcdGoToXY(4,2);
+				lcdSendIntFixedDigit( rms.Vp, V_CANT_DIG, 0 );
+				// Corriente Primaria
+				lcdGoToXY(14,2);
+				lcdSendIntFixedDigit( rms.Ip, I_CANT_DIG, 0 );
+				// Tension Secundaria
+				lcdGoToXY(3,3);
+				lcdSendIntFixedDigit( rms.Vs/10, V_CANT_DIG, 1 );
+				break;
+			case MEASURING_SECONDARY:
+				// Tension Primaria
+				lcdGoToXY(4,2);
+				lcdSendIntFixedDigit( rms.Vp, V_CANT_DIG, 0 );
+				// Tension Secundaria
+				lcdGoToXY(3,3);
+				lcdSendIntFixedDigit( rms.Vs/10, V_CANT_DIG, 1 );
+				// Corriente Secundaria
+				lcdGoToXY(14,3);
+				lcdSendIntFixedDigit( rms.Is, I_CANT_DIG, 0 );
+				break;
+			default:
 
-			// Tension Primaria
-			lcdGoToXY(4,2);
-			lcdSendIntFixedDigit( rms.Vp, V_CANT_DIG, 0 );
-			// Corriente Primaria
-			lcdGoToXY(14,2);
-			lcdSendIntFixedDigit( rms.Ip, I_CANT_DIG, 0 );
-			// Tension Secundaria
-			lcdGoToXY(3,3);
-			lcdSendIntFixedDigit( rms.Vs/10, V_CANT_DIG, 1 );
-			break;
-		case MEASURING_SECONDARY:
-			xQueueReceive(rms_queue, &rms, portMAX_DELAY);
-
-			// Tension Primaria
-			lcdGoToXY(4,2);
-			lcdSendIntFixedDigit( rms.Vp, V_CANT_DIG, 0 );
-			// Tension Secundaria
-			lcdGoToXY(3,3);
-			lcdSendIntFixedDigit( rms.Vs/10, V_CANT_DIG, 1 );
-			// Corriente Secundaria
-			lcdGoToXY(14,3);
-			lcdSendIntFixedDigit( rms.Is, I_CANT_DIG, 0 );
-			break;
-		default:
-			vTaskDelay(500 / portTICK_PERIOD_MS);
-			break;
+				break;
+			}
 		}
+		vTaskDelay(500 / portTICK_PERIOD_MS);
 	}
 }
 
 /*=====[Definitions of external functions]===================================*/
 
-void appLcdInit(void)
-{
-	xTaskCreate(appLcd_task, "appLcd_task", 2048, NULL, 5, &xHandle);
+void appLcdSend(lcd_msg_t lcd_msg) {
+	xQueueSend( lcd_queue, ( void * ) &lcd_msg, ( TickType_t ) 0 );
+}
+
+void appLcdSendRms(rms_t *rms) {
+	xQueueSend( rms_queue, ( void * ) rms, ( TickType_t ) 0 );
+}
+
+void appLcdInit(void) {
+	rms_queue = xQueueCreate(1, sizeof(rms_t));
+	lcd_queue = xQueueCreate(1, sizeof(lcd_msg_t));
+	xTaskCreate(appLcd_task, "appLcd_task", 2048, NULL, 5, NULL);
 }

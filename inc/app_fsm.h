@@ -11,25 +11,21 @@ extern "C" {
 #define CPV  GPIO_NUM_26
 #define CSV  GPIO_NUM_25
 
-#define pCan GPIO_NUM_27
+#define pCan 	GPIO_NUM_27
+#define pConf 	GPIO_NUM_36
+#define pTest 	GPIO_NUM_39
+
+#define ADC_ITERATION 5
 
 #include "freertos/semphr.h"
 #include "freertos/queue.h"
 
-extern SemaphoreHandle_t config_request;
-extern SemaphoreHandle_t cancel_request;
-extern QueueHandle_t lcd_queue;
+extern QueueHandle_t printer_queue;
 
 typedef enum {
-    WELCOME,
-	WAITING,
-	NOT_CONFIGURATED,
-	CONFIGURATION_OK,
-	CONFIGURATION_FAIL,
-	MEASURING_PRIMARY,
-	MEASURING_SECONDARY,
-	REPORT_LCD,
-} lcd_msg_t;
+	PRINTER_PASS,
+	PRINTER_FAIL,
+} printer_msg_t;
 
 void appFsmInit( void );
 
