@@ -5,8 +5,8 @@
  * Date: 2020/09/03
  * Version: v1.1
  *===========================================================================*/
-#ifndef _TECLAS_H_
-#define _TECLAS_H_
+#ifndef _BUTTON_H_
+#define _BUTTON_H_
 
 /*==================[inclusiones]============================================*/
 
@@ -35,25 +35,22 @@ typedef enum
 // Estructura principal
 typedef struct
 {
-	gpio_num_t tecla;
+	gpio_num_t button;
 
 	fsmButtonState_t fsmButtonState;
 
 	uint8_t contFalling;
 	uint8_t contRising;
 
-	SemaphoreHandle_t request;
-} tTecla;
+	bool pressed;
+} button_t;
 
 
 /*==================[prototipos de funciones]====================*/
-TickType_t get_diff();
-void clear_diff();
 
-void fsmButtonError( tTecla* config );
-void fsmButtonInit( tTecla* config, gpio_num_t tecla );
-void fsmButtonUpdate( tTecla* config );
-void buttonPressed( tTecla* config );
-void buttonReleased( tTecla* config );
+void fsmButtonError( button_t* config );
+void fsmButtonInit( button_t* config, gpio_num_t button );
+void fsmButtonUpdate( button_t* config );
+bool isButtonPressed( button_t* config );
 
-#endif /* _TECLAS_H_ */
+#endif /* _BUTTON_H_ */

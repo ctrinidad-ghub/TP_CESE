@@ -4,21 +4,22 @@
 #ifndef _APP_FSM_H_
 #define _APP_FSM_H_
 
+#include <stdio.h>
+
+#include "../inc/app_adc.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
+#include "driver/gpio.h"
+#include "../inc/app_lcd.h"
+#include "../inc/app_gpio.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define CPV  GPIO_NUM_26
-#define CSV  GPIO_NUM_25
-
-#define pCan 	GPIO_NUM_27
-#define pConf 	GPIO_NUM_36
-#define pTest 	GPIO_NUM_39
-
 #define ADC_ITERATION 5
-
-#include "freertos/semphr.h"
-#include "freertos/queue.h"
 
 extern QueueHandle_t printer_queue;
 

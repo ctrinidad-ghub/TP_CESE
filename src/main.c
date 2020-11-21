@@ -19,6 +19,7 @@
 #include "../inc/app_lcd.h"
 #include "../inc/app_fsm.h"
 #include "../inc/app_uart.h"
+#include "../inc/app_gpio.h"
 
 /*=====[Definition macros of private constants]==============================*/
 
@@ -48,6 +49,9 @@ void app_main()
 
 	// Inicializar UART
 	appUart();
+
+	// Inicializar GPIO
+	appGpioInit( );
 
 	// Inicializar FSM principal
 	appFsmInit( );

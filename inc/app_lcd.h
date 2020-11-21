@@ -26,12 +26,16 @@ typedef enum {
 	MEASURING_PRIMARY,
 	MEASURING_SECONDARY,
 	REPORT_LCD,
+} lcd_msg_id_t;
+
+typedef struct {
+	lcd_msg_id_t lcd_msg_id;
+	rms_t rms;
 } lcd_msg_t;
 
 void appLcdInit(void);
 
-void appLcdSend(lcd_msg_t lcd_msg);
-void appLcdSendRms(rms_t *rms);
+void appLcdSend(lcd_msg_id_t lcd_msg_id, rms_t *rms);
 
 #ifdef __cplusplus
 }

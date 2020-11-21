@@ -67,16 +67,13 @@
 /*=====[Definitions of private global variables]=============================*/
 
 static QueueHandle_t lcd_queue;
-static QueueHandle_t rms_queue;
 
 /*=====[Definitions of internal functions]===================================*/
 
 void appLcd_task(void *arg)
 {
 	lcd_config_t lcd_config;
-	rms_t rms;
 	lcd_msg_t lcd_msg;
-	lcd_msg_t msg;
 
 	vTaskDelay(200 / portTICK_PERIOD_MS);
 
@@ -89,111 +86,100 @@ void appLcd_task(void *arg)
 
 	lcdInit( &lcd_config );
 
-	msg = WELCOME;
-
 	while(1) {
-		if(xQueueReceive(lcd_queue, &lcd_msg, 0) == pdTRUE) {
-			msg = lcd_msg;
-			switch(msg) {
-			case WELCOME:
-				lcdGoToXY(0,0);
-				lcdSendString(WELCOME_1);
-				lcdSendString(WELCOME_2);
-				lcdSendString(WELCOME_3);
-				lcdSendString(WELCOME_4);
-				break;
-			case WAITING:
-				lcdGoToXY(0,0);
-				lcdSendString(WAITING_1);
-				lcdSendString(WAITING_2);
-				lcdSendString(WAITING_3);
-				lcdSendString(WAITING_4);
-				break;
-			case CONFIGURATION_OK:
-				lcdGoToXY(0,0);
-				lcdSendString(CONFIGURATION_OK_1);
-				lcdSendString(CONFIGURATION_OK_2);
-				lcdSendString(CONFIGURATION_OK_3);
-				lcdSendString(CONFIGURATION_OK_4);
-				break;
-			case NOT_CONFIGURATED:
-				lcdGoToXY(0,0);
-				lcdSendString(NOT_CONFIGURATED_1);
-				lcdSendString(NOT_CONFIGURATED_2);
-				lcdSendString(NOT_CONFIGURATED_3);
-				lcdSendString(NOT_CONFIGURATED_4);
-				break;
-			case MEASURING_PRIMARY:
-				lcdGoToXY(0,0);
-				lcdSendString(MEASURING_PRIMARY_1);
-				lcdSendString(MEASURING_PRIMARY_2);
-				lcdSendString(MEASURING_PRIMARY_3);
-				lcdSendString(MEASURING_PRIMARY_4);
-				break;
-			case MEASURING_SECONDARY:
-				lcdGoToXY(0,0);
-				lcdSendString(MEASURING_SECONDARY_1);
-				lcdSendString(MEASURING_SECONDARY_2);
-				lcdSendString(MEASURING_SECONDARY_3);
-				lcdSendString(MEASURING_SECONDARY_4);
-				break;
-			case REPORT_LCD:
-				lcdGoToXY(0,0);
-				lcdSendString(REPORT_LCD_1);
-				lcdSendString(REPORT_LCD_2);
-				lcdSendString(REPORT_LCD_3);
-				lcdSendString(REPORT_LCD_4);
-				break;
-			default:
-				break;
-			}
+		xQueueReceive(lcd_queue, &lcd_msg, portMAX_DELAY);
+		switch(lcd_msg.lcd_msg_id) {
+		case WELCOME:
+			lcdGoToXY(0,0);
+			lcdSendString(WELCOME_1);
+			lcdSendString(WELCOME_2);
+			lcdSendString(WELCOME_3);
+			lcdSendString(WELCOME_4);
+			break;
+		case WAITING:
+			lcdGoToXY(0,0);
+			lcdSendString(WAITING_1);
+			lcdSendString(WAITING_2);
+			lcdSendString(WAITING_3);
+			lcdSendString(WAITING_4);
+			break;
+		case CONFIGURATION_OK:
+			lcdGoToXY(0,0);
+			lcdSendString(CONFIGURATION_OK_1);
+			lcdSendString(CONFIGURATION_OK_2);
+			lcdSendString(CONFIGURATION_OK_3);
+			lcdSendString(CONFIGURATION_OK_4);
+			break;
+		case NOT_CONFIGURATED:
+			lcdGoToXY(0,0);
+			lcdSendString(NOT_CONFIGURATED_1);
+			lcdSendString(NOT_CONFIGURATED_2);
+			lcdSendString(NOT_CONFIGURATED_3);
+			lcdSendString(NOT_CONFIGURATED_4);
+			break;
+		case MEASURING_PRIMARY:
+			lcdGoToXY(0,0);
+			lcdSendString(MEASURING_PRIMARY_1);
+			lcdSendString(MEASURING_PRIMARY_2);
+			lcdSendString(MEASURING_PRIMARY_3);
+			lcdSendString(MEASURING_PRIMARY_4);
+			// Tension Primaria
+			lcdGoToXY(4,2);
+			lcdSendIntFixedDigit( lcd_msg.rms.Vp, V_CANT_DIG, 0 );
+			// Corriente Primaria
+			lcdGoToXY(14,2);
+			lcdSendIntFixedDigit( lcd_msg.rms.Ip, I_CANT_DIG, 0 );
+			// Tension Secundaria
+			lcdGoToXY(3,3);
+			lcdSendIntFixedDigit( lcd_msg.rms.Vs/10, V_CANT_DIG, 1 );
+			break;
+		case MEASURING_SECONDARY:
+			lcdGoToXY(0,0);
+			lcdSendString(MEASURING_SECONDARY_1);
+			lcdSendString(MEASURING_SECONDARY_2);
+			lcdSendString(MEASURING_SECONDARY_3);
+			lcdSendString(MEASURING_SECONDARY_4);
+			// Tension Primaria
+			lcdGoToXY(4,2);
+			lcdSendIntFixedDigit( lcd_msg.rms.Vp, V_CANT_DIG, 0 );
+			// Tension Secundaria
+			lcdGoToXY(3,3);
+			lcdSendIntFixedDigit( lcd_msg.rms.Vs/10, V_CANT_DIG, 1 );
+			// Corriente Secundaria
+			lcdGoToXY(14,3);
+			lcdSendIntFixedDigit( lcd_msg.rms.Is, I_CANT_DIG, 0 );
+			break;
+		case REPORT_LCD:
+			lcdGoToXY(0,0);
+			lcdSendString(REPORT_LCD_1);
+			lcdSendString(REPORT_LCD_2);
+			lcdSendString(REPORT_LCD_3);
+			lcdSendString(REPORT_LCD_4);
+			break;
+		default:
+			break;
 		}
-
-		if (xQueueReceive(rms_queue, &rms, 0) == pdTRUE) {
-			switch(msg) {
-			case MEASURING_PRIMARY:
-				// Tension Primaria
-				lcdGoToXY(4,2);
-				lcdSendIntFixedDigit( rms.Vp, V_CANT_DIG, 0 );
-				// Corriente Primaria
-				lcdGoToXY(14,2);
-				lcdSendIntFixedDigit( rms.Ip, I_CANT_DIG, 0 );
-				// Tension Secundaria
-				lcdGoToXY(3,3);
-				lcdSendIntFixedDigit( rms.Vs/10, V_CANT_DIG, 1 );
-				break;
-			case MEASURING_SECONDARY:
-				// Tension Primaria
-				lcdGoToXY(4,2);
-				lcdSendIntFixedDigit( rms.Vp, V_CANT_DIG, 0 );
-				// Tension Secundaria
-				lcdGoToXY(3,3);
-				lcdSendIntFixedDigit( rms.Vs/10, V_CANT_DIG, 1 );
-				// Corriente Secundaria
-				lcdGoToXY(14,3);
-				lcdSendIntFixedDigit( rms.Is, I_CANT_DIG, 0 );
-				break;
-			default:
-
-				break;
-			}
-		}
-		vTaskDelay(500 / portTICK_PERIOD_MS);
 	}
 }
 
 /*=====[Definitions of external functions]===================================*/
 
-void appLcdSend(lcd_msg_t lcd_msg) {
+void appLcdSend(lcd_msg_id_t lcd_msg_id, rms_t *rms) {
+	lcd_msg_t lcd_msg;
+
+	lcd_msg.lcd_msg_id = lcd_msg_id;
+
+	if(rms != NULL) {
+		lcd_msg.rms.Vp = rms->Vp;
+		lcd_msg.rms.Ip = rms->Ip;
+		lcd_msg.rms.Vs = rms->Vs;
+		lcd_msg.rms.Is = rms->Is;
+	}
+
 	xQueueSend( lcd_queue, ( void * ) &lcd_msg, ( TickType_t ) 0 );
 }
 
-void appLcdSendRms(rms_t *rms) {
-	xQueueSend( rms_queue, ( void * ) rms, ( TickType_t ) 0 );
-}
-
 void appLcdInit(void) {
-	rms_queue = xQueueCreate(1, sizeof(rms_t));
 	lcd_queue = xQueueCreate(1, sizeof(lcd_msg_t));
 	xTaskCreate(appLcd_task, "appLcd_task", 2048, NULL, 5, NULL);
 }
