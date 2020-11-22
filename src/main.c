@@ -5,21 +5,7 @@
 
 /*=====[Inclusions of function dependencies]=================================*/
 
-#include <stdio.h>
-
-#include "../inc/app_adc.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
-#include "esp_spi_flash.h"
-#include "driver/gpio.h"
-#include "esp_log.h"
-#include "esp_event_loop.h"
-#include "nvs_flash.h"
-#include "../inc/app_lcd.h"
-#include "../inc/app_fsm.h"
-#include "../inc/app_uart.h"
-#include "../inc/app_gpio.h"
+#include "../inc/main.h"
 
 /*=====[Definition macros of private constants]==============================*/
 
@@ -41,18 +27,18 @@ void app_main()
 	}
 	ESP_ERROR_CHECK( ret );
 
-	// Inicializar LCD
+	// LCD Initialization
 	appLcdInit( );
 
-	// Inicializar ADC
+	// ADC Initialization
 	appAdcInit( );
 
-	// Inicializar UART
+	// UART Initialization
 	appUart();
 
-	// Inicializar GPIO
+	// GPIO Initialization
 	appGpioInit( );
 
-	// Inicializar FSM principal
+	// Main FSM Initialization
 	appFsmInit( );
 }

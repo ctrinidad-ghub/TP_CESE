@@ -121,6 +121,9 @@ void fsm_task (void*arg)
 
 	xTaskCreate(checkTafo_task, "checkTafo_task", 1024 * 2, NULL, 5, NULL);
 
+	// Wait until the LCD has initiate
+	vTaskDelay(3000 / portTICK_PERIOD_MS);
+
 	while (1) {
 		switch(deviceControl.test_state) {
 		case STARTUP:
@@ -139,7 +142,6 @@ void fsm_task (void*arg)
 			if ( isTestPressed( ) ) {
 				if ( isConfigurated() ) {
 					deviceControl.test_state = POWER_UP_PRIMARY;
-					//appLcdSend(MEASURING_PRIMARY, NULL);
 				}
 				else {
 					deviceControl.test_state = ASK_FOR_CONFIGURATION;
@@ -173,7 +175,7 @@ void fsm_task (void*arg)
 			xSemaphoreGive(checkTafo_semphr);
 			break;
 		case MEASURE_PRIMARY:
-			// Wait until the primary caracterization is finished
+			// Wait until the primary characterization is finished
 			xSemaphoreTake(checkTafoInProgress_semphr, portMAX_DELAY);
 			deviceControl.test_state = POWER_DOWN_PRIMARY;
 			break;
@@ -187,11 +189,10 @@ void fsm_task (void*arg)
 			vTaskDelay(200 / portTICK_PERIOD_MS);
 			connectSecondary();
 			deviceControl.test_state = MEASURE_SECONDARY;
-			//appLcdSend(MEASURING_SECONDARY);
 			xSemaphoreGive(checkTafo_semphr);
 			break;
 		case MEASURE_SECONDARY:
-			// Wait until the secondary caracterization is finished
+			// Wait until the secondary characterization is finished
 			xSemaphoreTake(checkTafoInProgress_semphr, portMAX_DELAY);
 			deviceControl.test_state = POWER_DOWN_SECONDARY;
 			break;

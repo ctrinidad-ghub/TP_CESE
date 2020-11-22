@@ -175,7 +175,7 @@ void lcdSendInt( int64_t value );
 void lcdSendIntClearLine( int64_t value );
 void lcdSendIntFormXY( int64_t value, uint8_t x, uint8_t y );
 void lcdSendIntFormXYClearLine( int64_t value, uint8_t x, uint8_t y );
-void lcdSendIntFixedDigit( int64_t value, uint8_t dig, int8_t dot );
+char lcdSendIntFixedDigit( int64_t value, uint8_t dig, uint8_t dot );
 
 #ifdef SUPPORT_FLOAT
 void lcdSendFloat( float value, uint32_t decDigits );

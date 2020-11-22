@@ -12,7 +12,6 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/semphr.h"
 #include "stdlib.h"
 #include "driver/gpio.h"
 
@@ -23,7 +22,7 @@
 #define DEBOUNCE_TIME_MS (40/BUTTON_RATE_MS)
 
 /*==================[definiciones de datos]=========================*/
-// Tipo de dato FSM
+
 typedef enum
 {
     STATE_BUTTON_UP,
@@ -32,7 +31,7 @@ typedef enum
     STATE_BUTTON_RISING
 } fsmButtonState_t;
 
-// Estructura principal
+
 typedef struct
 {
 	gpio_num_t button;
@@ -48,7 +47,6 @@ typedef struct
 
 /*==================[prototipos de funciones]====================*/
 
-void fsmButtonError( button_t* config );
 void fsmButtonInit( button_t* config, gpio_num_t button );
 void fsmButtonUpdate( button_t* config );
 bool isButtonPressed( button_t* config );

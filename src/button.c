@@ -6,39 +6,43 @@
  * Version: v1.1
  *===========================================================================*/
 
-/*==================[inclusiones]============================================*/
+/*=====[Definition macros of private constants]==============================*/
 
 #include "../inc/button.h"
 
-/*==================[prototipos]============================================*/
+/*=====[Definitions of extern global variables]==============================*/
 
-void fsmButtonError( button_t* config );
-void fsmButtonInit( button_t* config, gpio_num_t button );
-void fsmButtonUpdate( button_t* config );
-void buttonPressed( button_t* config );
-void buttonReleased( button_t* config );
+/*=====[Definitions of public global variables]==============================*/
 
-/*==================[funciones]============================================*/
+/*=====[Definitions of private global variables]=============================*/
 
-bool isButtonPressed( button_t* config )
-{
-	return config->pressed;
-}
+// ESP-IDF FreeRTOS implements critical sections using special mutexes, referred by
+// portMUX_Type objects on top of specific spinlock component
+// https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/freertos-smp.html?highlight=portenter_critical#critical-sections
+portMUX_TYPE buttonMux = portMUX_INITIALIZER_UNLOCKED;
+
+/*=====[Definitions of internal functions]===================================*/
 
 void buttonPressed( button_t* config )
 {
+	portENTER_CRITICAL(&buttonMux);
 	config->pressed = 1;
+	portEXIT_CRITICAL(&buttonMux);
 }
 
 void buttonReleased( button_t* config )
 {
+	portENTER_CRITICAL(&buttonMux);
 	config->pressed = 0;
+	portEXIT_CRITICAL(&buttonMux);
 }
 
 void fsmButtonError( button_t* config )
 {
 	config->fsmButtonState = STATE_BUTTON_UP;
 }
+
+/*=====[Definitions of external functions]===================================*/
 
 void fsmButtonInit( button_t* config, gpio_num_t button )
 {
@@ -47,6 +51,15 @@ void fsmButtonInit( button_t* config, gpio_num_t button )
 	config->fsmButtonState = STATE_BUTTON_UP;  // Set initial state
 	config->button = button;
 	config->pressed = 0;
+}
+
+bool isButtonPressed( button_t* config )
+{
+	bool pressed;
+	portENTER_CRITICAL(&buttonMux);
+	pressed = config->pressed;
+	portEXIT_CRITICAL(&buttonMux);
+	return pressed;
 }
 
 // FSM Update Sate Function

@@ -53,7 +53,6 @@ typedef struct {
 } lcd_t;
 
 static lcd_t lcd;
-static char auxBuff[10];
 
 /*==================[definiciones de datos externos]=========================*/
 
@@ -371,36 +370,52 @@ void lcdSendInt( int64_t value )
    lcdSendString( intToStringGlobal(value) );
 }
 
-void lcdSendIntFixedDigit( int64_t value, uint8_t dig, int8_t dot )
+char lcdSendIntFixedDigit( int64_t value, uint8_t dig, uint8_t dot )
 {
-   int8_t i,j;
+   int8_t i,dig_r;
+   char valueChar[10];
+   char lcdBuff[10];
 
-   int64ToString( value, auxBuff, 10 );
-   for(j=0;j<dig;j++)
+   if (dot >= dig) return -1;
+   if (value < 0) return -1;
+
+   int64ToString( value, valueChar, 10 );
+   for (dig_r=0;dig_r<dig;dig_r++)
    {
-	   if(*(auxBuff+j) == 0) break;
+	   if (*(valueChar+dig_r) == 0) break;
    }
-   dot = dig - dot;
-   for(i=0;i<dig;i++)
-   {
-	   if (i<(dig-j)){
-		   if((i == (dot-1)) && (dot != dig)) {
-			   lcdSendChar('0');
-		   } else
-		   {
-			   if ((i >= dot) && (dot != dig)) {
-				   lcdSendChar('.');
-				   lcdSendChar('0');
-			   } else lcdSendChar(' ');
-		   }
+
+   if ((dig_r > dig) || ((dig_r > (dig-1)) && dot > 0)) return -1;
+
+   if (dot == 0) dot = dig;
+   else dot = dig - dot - 1;
+
+   for (i=0;i<dig;i++) lcdBuff[i] = ' ';
+
+   for (i=0;i<dig;i++) {
+	   if ((dig-i-1)<=(dig_r-1)) {
+		   if (dot==i) {
+            lcdBuff[i] = '.';
+            lcdBuff[i-1] = valueChar[dig_r-dig+i];
+         }
+         else if (i<dot) {
+            if (dot==dig) lcdBuff[i] = valueChar[dig_r-dig+i];
+            else lcdBuff[i-1] = valueChar[dig_r-dig+i];
+         }
+		   else if (i>dot) lcdBuff[i] = valueChar[dig_r-dig+i];
 	   }
-	   else {
-		   if((i == (dot)) && (dot != dig)) {
-			   lcdSendChar('.');
-		   }
-		   lcdSendChar(*(auxBuff+(i-dig+j)));
+	   if ((dig-i-1)>(dig_r-1) && i>=dot) {
+		   if (dot==i){
+            lcdBuff[i] = '.';
+            if (i!=0) lcdBuff[i-1] = '0';
+         }
+		   else lcdBuff[i] = '0';
 	   }
    }
+
+   for(i=0;i<dig;i++) lcdSendChar(lcdBuff[i]);
+
+   return 0;
 }
 
 void lcdSendIntClearLine( int64_t value )
