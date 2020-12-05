@@ -5,6 +5,7 @@
 
 /*=====[Inclusions of function dependencies]=================================*/
 
+#include <app_printer.h>
 #include "freertos/FreeRTOS.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
@@ -14,7 +15,6 @@
 #include "../inc/app_adc.h"
 #include "../inc/app_lcd.h"
 #include "../inc/app_fsm.h"
-#include "../inc/app_uart.h"
 #include "../inc/app_gpio.h"
 #include "../inc/main.h"
 
@@ -44,8 +44,8 @@ void app_main()
 	// ADC Initialization
 	appAdcInit( );
 
-	// UART Initialization
-	appUart();
+	// Printer Initialization
+	appPrinter();
 
 	// GPIO Initialization
 	appGpioInit( );

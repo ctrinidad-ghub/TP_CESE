@@ -47,7 +47,7 @@ static void appUart_task()
     };
     uart_param_config(UART_NUM_2, &uart_config);
     uart_set_pin(UART_NUM_2, ECHO_TEST_TXD, ECHO_TEST_RXD, ECHO_TEST_RTS, ECHO_TEST_CTS);
-    uart_driver_install(UART_NUM_2, BUF_SIZE * 2, 0, 0, NULL, 0);
+    uart_driver_install(UART_NUM_2, BUF_SIZE, 0, 0, NULL, 0);
 
     // Configure a temporary buffer for the incoming data
     uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
@@ -72,7 +72,7 @@ static void appUart_task()
     }
 }
 
-void appUart(void)
+void appPrinter(void)
 {
     xTaskCreate(appUart_task, "appUart_task", 1024, NULL, 10, NULL);
 }
