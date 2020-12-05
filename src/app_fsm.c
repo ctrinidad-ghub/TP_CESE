@@ -5,9 +5,19 @@
 
 /*=====[Inclusions of function dependencies]=================================*/
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "freertos/queue.h"
+#include "driver/gpio.h"
+#include "../inc/app_lcd.h"
+#include "../inc/app_gpio.h"
 #include "../inc/app_fsm.h"
+#include "../inc/app_adc.h"
 
-/*=====[Definition macros of private constants]==============================*/
+/*=====[Definition of private macros, constants or data types]===============*/
+
+#define ADC_ITERATION 5
 
 /*=====[Definitions of extern global variables]==============================*/
 

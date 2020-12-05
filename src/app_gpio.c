@@ -5,9 +5,15 @@
 
 /*=====[Inclusions of function dependencies]=================================*/
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/semphr.h"
+#include "stdlib.h"
+#include "driver/gpio.h"
+#include "../inc/button.h"
 #include "../inc/app_gpio.h"
 
-/*=====[Definition macros of private constants]==============================*/
+/*=====[Definition of private macros, constants or data types]===============*/
 
 // GPIO
 #define GPIO_OUTPUT_PIN_SEL  (1ULL<<CPV | 1ULL<<CSV)

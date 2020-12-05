@@ -5,9 +5,14 @@
 
 /*=====[Inclusions of function dependencies]=================================*/
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "../inc/app_adc.h"
+#include "../inc/sapi_lcd.h"
 #include "../inc/app_lcd.h"
 
-/*=====[Definition macros of private constants]==============================*/
+/*=====[Definition of private macros, constants or data types]===============*/
 
 #define V_CANT_DIG 3
 #define I_CANT_DIG 4
@@ -59,6 +64,11 @@
 #define REPORT_LCD_2  "|    Enviando      |"
 #define REPORT_LCD_3  "|     reporte      |"
 #define REPORT_LCD_4  "+------------------+"
+
+typedef struct {
+	lcd_msg_id_t lcd_msg_id;
+	rms_t rms;
+} lcd_msg_t;
 
 /*=====[Definitions of extern global variables]==============================*/
 

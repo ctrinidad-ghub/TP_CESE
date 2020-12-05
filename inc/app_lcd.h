@@ -1,40 +1,50 @@
-/*
- * */
+/**
+ * @file app_lcd.h
+ * 
+ * @brief 
+ * 
+ * @author Cristian Trinidad
+ */
 
 #ifndef _APP_LCD_H_
 #define _APP_LCD_H_
 
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
-#include "driver/gpio.h"
-#include "freertos/queue.h"
 #include "../inc/app_adc.h"
-#include "../inc/sapi_lcd.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * @brief LCD message type for appLcdSend function
+ * 
+ */
 typedef enum {
-    WELCOME,
-	WAITING,
-	NOT_CONFIGURATED,
-	CONFIGURATION_OK,
-	CONFIGURATION_FAIL,
-	MEASURING_PRIMARY,
-	MEASURING_SECONDARY,
-	REPORT_LCD,
+    WELCOME,                /*!<Welcome LCD message                             */
+	WAITING,                /*!<Welcome LCD message                             */
+	NOT_CONFIGURATED,       /*!<Welcome LCD message                             */
+	CONFIGURATION_OK,       /*!<Welcome LCD message                             */
+	CONFIGURATION_FAIL,     /*!<Welcome LCD message                             */
+	MEASURING_PRIMARY,      /*!<Welcome LCD message                             */
+	MEASURING_SECONDARY,    /*!<Welcome LCD message                             */
+	REPORT_LCD,             /*!<Welcome LCD message                             */
 } lcd_msg_id_t;
 
-typedef struct {
-	lcd_msg_id_t lcd_msg_id;
-	rms_t rms;
-} lcd_msg_t;
-
+/**
+ * @brief Initialize LCD
+ * 
+ */
 void appLcdInit(void);
 
+/**
+ * @brief Send a lcd_msg_id_t to the LCD
+ * 
+ * @param lcd_msg_id Message to send
+ * @param rms Pointer to an struct that constain the RMS values to show
+ * 
+ * @note The rms pointer is optional and depends on the lcd_msg_id to send
+ * 
+ */
 void appLcdSend(lcd_msg_id_t lcd_msg_id, rms_t *rms);
 
 #ifdef __cplusplus

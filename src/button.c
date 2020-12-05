@@ -10,7 +10,7 @@
 
 #include "../inc/button.h"
 
-/*=====[Definitions of extern global variables]==============================*/
+/*=====[Definition of private macros, constants or data types]===============*/
 
 /*=====[Definitions of public global variables]==============================*/
 
