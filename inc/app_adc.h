@@ -36,6 +36,12 @@
 #define GAIN_800mA   100 // Primary current
 #define GAIN_1500mA  100 // Secondary current
 
+// 1st order filter: y[n] = B0 * x[n] + A1 * y[n-1]
+#define TAO_US 	500
+#define TS_US 	20000/SAMPLES_IN_20MS
+#define B0		(1000/(1+TAO_US/TS_US))
+#define A1		(B0 * TAO_US/TS_US)
+
 typedef enum {
 	PV, PC, SV, SC
 } adc_ch_t;
@@ -45,6 +51,7 @@ typedef struct {
 	uint32_t sum_voltage;
 	uint32_t *rms;
 	int32_t gain; // x100
+	int32_t voltageFilter;
 } adc_t;
 /** @endcond */
 

@@ -28,10 +28,9 @@ static esp_adc_cal_characteristics_t *adc_chars;
 static rms_t rms;
 static QueueHandle_t adc_queue;
 static SemaphoreHandle_t startConv;
+static uint16_t I2SReadBuff[I2S_READ_LEN];
 
 /*=====[Definitions of internal functions]===================================*/
-
-uint16_t i2s_read_buff_[I2S_READ_LEN];
 
 void appAdcDmaInit()
 {
@@ -70,41 +69,43 @@ void appAdcStart(rms_t *rms)
 
 void adc_dma_task(void*arg)
 {
-
     size_t bytes_read;
     uint32_t i, j;
     uint32_t adcIndex = 0;
-
-    // Read from ADC and save
-    uint16_t* i2s_read_buff = i2s_read_buff_;
+    uint8_t adc_init = 0;
+    uint16_t* pI2SReadBuff= I2SReadBuff;
 
     while (1) {
-
-		//read data from I2S bus, in this case, from ADC.
-		if (i2s_read(I2S_NUM_0, (uint16_t*) i2s_read_buff, I2S_READ_LEN * sizeof(uint16_t), &bytes_read, 300 / portTICK_PERIOD_MS) == ESP_OK) {
+		// Read ADC data from I2S bus
+		if (i2s_read(I2S_NUM_0, (uint16_t*) pI2SReadBuff, I2S_READ_LEN * sizeof(uint16_t), &bytes_read, 300 / portTICK_PERIOD_MS) == ESP_OK) {
 
 			i2s_adc_disable(I2S_NUM_0);
 
 			*adc[adcIndex].rms = 0;
+			adc[adcIndex].voltageFilter = 0;
 
 			for (j=0; j<AMOUNT_OF_CYLCES; j++) {
 				for (i=0; i<SAMPLES_IN_20MS; i++) {
-					i2s_read_buff_[i+SAMPLES_IN_20MS*j] = esp_adc_cal_raw_to_voltage(i2s_read_buff_[i+SAMPLES_IN_20MS*j] & 0x0FFF, adc_chars);
-					int16_t voltage = i2s_read_buff_[i+SAMPLES_IN_20MS*j];
+					I2SReadBuff[i+SAMPLES_IN_20MS*j] = esp_adc_cal_raw_to_voltage(I2SReadBuff[i+SAMPLES_IN_20MS*j] & 0x0FFF, adc_chars);
+					int16_t voltage = I2SReadBuff[i+SAMPLES_IN_20MS*j];
 					voltage -= ZER0;
 					voltage = voltage * 100 / adc[adcIndex].gain;
-					adc[adcIndex].sum_voltage += voltage * voltage;
+					adc[adcIndex].voltageFilter = (B0 * voltage + A1 * adc[adcIndex].voltageFilter)/1000;
+					adc[adcIndex].sum_voltage += adc[adcIndex].voltageFilter * adc[adcIndex].voltageFilter;
 				}
-				adc[adcIndex].sum_voltage /= SAMPLES_IN_20MS;
-				*adc[adcIndex].rms += sqrt(adc[adcIndex].sum_voltage);
+				if (j!=0) {
+					adc[adcIndex].sum_voltage /= SAMPLES_IN_20MS;
+					*adc[adcIndex].rms += sqrt(adc[adcIndex].sum_voltage);
+				}
 			}
 
-			*adc[adcIndex].rms /= AMOUNT_OF_CYLCES;
+			*adc[adcIndex].rms /= (AMOUNT_OF_CYLCES-1);
 
 			adc[adcIndex].sum_voltage = 0;
 			if (adcIndex == ADC_CHANNELS-1) {
 				adcIndex = 0;
-				xQueueSend( adc_queue, ( void * ) &rms, ( TickType_t ) 0 );
+				if (adc_init == 1) xQueueSend( adc_queue, ( void * ) &rms, ( TickType_t ) 0 );
+				adc_init = 1;
 				xSemaphoreTake(startConv, portMAX_DELAY);
 			}
 			else adcIndex++;
@@ -114,6 +115,8 @@ void adc_dma_task(void*arg)
 			i2s_adc_disable(I2S_NUM_0);
 		}
 		i2s_set_adc_mode(ADC_UNIT_1, adc[adcIndex].channel);
+		// Dummy read to prevent from reading corrupt data at changing the channel
+		i2s_read(I2S_NUM_0, (uint16_t*) pI2SReadBuff, I2S_READ_LEN * sizeof(uint16_t), &bytes_read, 300 / portTICK_PERIOD_MS);
 		i2s_adc_enable(I2S_NUM_0);
     }
 

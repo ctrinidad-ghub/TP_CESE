@@ -14,8 +14,11 @@
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
-#define V_CANT_DIG 3
-#define I_CANT_DIG 4
+#define VP_AMOUNT_OF_DIG 		3
+#define VS_AMOUNT_OF_DIG 		4 // Include the decimal point
+#define VS_DECIMAL_POINT_POS 	1
+#define DECIMAL_POINT_NOT_USED 	0
+#define I_CANT_DIG 				4
 
 //  WELCOME
 #define WELCOME_1  "+------------------+"
@@ -135,13 +138,13 @@ void appLcd_task(void *arg)
 			lcdSendString(MEASURING_PRIMARY_4);
 			// Tension Primaria
 			lcdGoToXY(4,2);
-			lcdSendIntFixedDigit( lcd_msg.rms.Vp, V_CANT_DIG, 0 );
+			lcdSendIntFixedDigit( lcd_msg.rms.Vp, VP_AMOUNT_OF_DIG, DECIMAL_POINT_NOT_USED );
 			// Corriente Primaria
 			lcdGoToXY(14,2);
-			lcdSendIntFixedDigit( lcd_msg.rms.Ip, I_CANT_DIG, 0 );
+			lcdSendIntFixedDigit( lcd_msg.rms.Ip, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
 			// Tension Secundaria
 			lcdGoToXY(3,3);
-			lcdSendIntFixedDigit( lcd_msg.rms.Vs/10, V_CANT_DIG, 1 );
+			lcdSendIntFixedDigit( lcd_msg.rms.Vs/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
 			break;
 		case MEASURING_SECONDARY:
 			lcdGoToXY(0,0);
@@ -151,13 +154,13 @@ void appLcd_task(void *arg)
 			lcdSendString(MEASURING_SECONDARY_4);
 			// Tension Primaria
 			lcdGoToXY(4,2);
-			lcdSendIntFixedDigit( lcd_msg.rms.Vp, V_CANT_DIG, 0 );
+			lcdSendIntFixedDigit( lcd_msg.rms.Vp, VP_AMOUNT_OF_DIG, DECIMAL_POINT_NOT_USED );
 			// Tension Secundaria
 			lcdGoToXY(3,3);
-			lcdSendIntFixedDigit( lcd_msg.rms.Vs/10, V_CANT_DIG, 1 );
+			lcdSendIntFixedDigit( lcd_msg.rms.Vs/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
 			// Corriente Secundaria
 			lcdGoToXY(14,3);
-			lcdSendIntFixedDigit( lcd_msg.rms.Is, I_CANT_DIG, 0 );
+			lcdSendIntFixedDigit( lcd_msg.rms.Is, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
 			break;
 		case REPORT_LCD:
 			lcdGoToXY(0,0);
