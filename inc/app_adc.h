@@ -80,4 +80,16 @@ void appAdcInit(void);
  */
 void appAdcStart(rms_t *rms);
 
+/**
+ * @brief Enable ADC App driver
+ * 
+ */
+void appAdcEnable(void);
+
+/**
+ * @brief Disable ADC App driver
+ * 
+ */
+void appAdcDisable(void);
+
 #endif /* INC_APP_ADC_H_ */

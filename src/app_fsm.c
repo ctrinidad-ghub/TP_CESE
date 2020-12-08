@@ -14,6 +14,7 @@
 #include "../inc/app_fsm.h"
 #include "../inc/app_adc.h"
 #include "../inc/app_printer.h"
+#include "../inc/app_WiFi.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
@@ -138,7 +139,9 @@ void fsm_task (void*arg)
 			appLcdSend(WELCOME, NULL);
 
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-
+			appAdcDisable();
+			app_WiFiInit();
+			app_WiFiConnect();
 			appLcdSend(WAITING, NULL);
 			deviceControl.test_state = WAIT_TEST;
 			break;
@@ -148,6 +151,7 @@ void fsm_task (void*arg)
 			if ( isTestPressed( ) ) {
 				if ( isConfigurated() ) {
 					deviceControl.test_state = POWER_UP_PRIMARY;
+					app_WiFiDisconnect();
 				}
 				else {
 					deviceControl.test_state = ASK_FOR_CONFIGURATION;
@@ -174,6 +178,7 @@ void fsm_task (void*arg)
 			deviceControl.test_state = WAIT_TEST;
 			break;
 		case POWER_UP_PRIMARY:
+			appAdcEnable();
 			disconnectPrimarySecondary();
 			vTaskDelay(200 / portTICK_PERIOD_MS);
 			connectPrimary();
@@ -209,6 +214,8 @@ void fsm_task (void*arg)
 			break;
 		case REPORT:
 			appLcdSend(REPORT_LCD, NULL);
+			appAdcDisable();
+			app_WiFiConnect();
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
 			deviceControl.test_state = WAIT_TEST;
 			appLcdSend(WAITING, NULL);
@@ -227,5 +234,5 @@ void fsm_task (void*arg)
 
 void appFsmInit( void )
 {
-	xTaskCreate(fsm_task, "fsm_task", 1024 * 2, NULL, 5, NULL);
+	xTaskCreate(fsm_task, "fsm_task", 1024 * 4, NULL, 5, NULL);
 }

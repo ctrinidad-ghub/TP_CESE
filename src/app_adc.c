@@ -32,7 +32,7 @@ static uint16_t I2SReadBuff[I2S_READ_LEN];
 
 /*=====[Definitions of internal functions]===================================*/
 
-void appAdcDmaInit()
+void appAdcEnable()
 {
 	 i2s_config_t i2s_config = {
         .mode = I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN,
@@ -51,6 +51,10 @@ void appAdcDmaInit()
 
 	 //init ADC pad
 	 i2s_set_adc_mode(ADC_UNIT_1, adc[0].channel);
+}
+
+void appAdcDisable(void){
+	i2s_driver_uninstall(I2S_NUM_0);
 }
 
 void appAdcStart(rms_t *rms)
@@ -164,7 +168,7 @@ void appAdcInit(void)
 	adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
 	esp_adc_cal_characterize((adc_unit_t) ADC_UNIT_1, (adc_atten_t) ATTEN, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
 
-	appAdcDmaInit();
+	appAdcEnable();
 	xTaskCreate(adc_dma_task, "adc_dma_task", 1024 * 4, NULL, 5, NULL);
 }
 
