@@ -13,7 +13,36 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Message to print, used in print function
+ * 
+ */
+typedef enum {
+	TEST_PASS,
+	TEST_FAIL,
+} printer_msg_t;
+
+/**
+ * @brief Printer status
+ * 
+ */
+typedef enum {
+	PRINT_OK
+} printerStatus_t;
+
+/**
+ * @brief Initialize printer 
+ * 
+ */
 void appPrinter( void );
+
+/**
+ * @brief Send printer_msg to the printer
+ * 
+ * @param printer_msg 
+ * @return printerStatus_t 
+ */
+printerStatus_t print(printer_msg_t printer_msg);
 
 #ifdef __cplusplus
 }

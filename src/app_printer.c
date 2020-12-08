@@ -7,30 +7,33 @@
 #include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
-#include "../inc/app_fsm.h"
+#include "../inc/app_printer.h"
 
-/**
- * This is an example which echos any data it receives on UART2 back to the sender,
- * with hardware flow control turned off. It does not use UART driver event queue.
- *
- * - Port: UART2
- * - Receive (Rx) buffer: on
- * - Transmit (Tx) buffer: off
- * - Flow control: off
- * - Event queue: off
- * - Pin assignment: see defines below
- */
+/*=====[Definition of private macros, constants or data types]===============*/
 
-#define ECHO_TEST_TXD  (GPIO_NUM_17)
-#define ECHO_TEST_RXD  (GPIO_NUM_16)
-#define ECHO_TEST_RTS  (UART_PIN_NO_CHANGE)
-#define ECHO_TEST_CTS  (UART_PIN_NO_CHANGE)
+#define UART_TX  (GPIO_NUM_17)
+#define UART_RX  (GPIO_NUM_16)
+#define UART_RTS  (UART_PIN_NO_CHANGE)
+#define UART_CTS  (UART_PIN_NO_CHANGE)
 
 #define BUF_SIZE (1024)
 
+/*=====[Definitions of extern global variables]==============================*/
+
+/*=====[Definitions of public global variables]==============================*/
+
+/*=====[Definitions of private global variables]=============================*/
+
+uint8_t uartBuffer[BUF_SIZE];
+
 int len;
+
+QueueHandle_t printer_queue;
+
+/*=====[Definitions of internal functions]===================================*/
 
 static void appUart_task()
 {
@@ -46,11 +49,8 @@ static void appUart_task()
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
     };
     uart_param_config(UART_NUM_2, &uart_config);
-    uart_set_pin(UART_NUM_2, ECHO_TEST_TXD, ECHO_TEST_RXD, ECHO_TEST_RTS, ECHO_TEST_CTS);
+    uart_set_pin(UART_NUM_2, UART_TX, UART_RX, UART_RTS, UART_CTS);
     uart_driver_install(UART_NUM_2, BUF_SIZE, 0, 0, NULL, 0);
-
-    // Configure a temporary buffer for the incoming data
-    uint8_t *data = (uint8_t *) malloc(BUF_SIZE);
 
     vTaskDelay(200 / portTICK_PERIOD_MS);
 
@@ -62,17 +62,29 @@ static void appUart_task()
 
 		}*/
     	xQueueReceive(printer_queue, &printer_msg, portMAX_DELAY);
-    		*(data)= 0x01;
-    		*(data+1)= 0x41;
-    		*(data+2)= 0x0D;
-    		len = 3;
-    		uart_write_bytes(UART_NUM_2, (const char *) data, len);
-    		len = uart_read_bytes(UART_NUM_2, data, BUF_SIZE, 5000 / portTICK_RATE_MS);
+    	// Send ASCII Status String: <SOH>A
+    	// Printer Response: abcdefgh<CR>
+    	uartBuffer[0]= 0x01;
+    	uartBuffer[1]= 0x41;
+    	uartBuffer[2]= 0x0D;
+    	len = 3;
+    	uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
+    	len = uart_read_bytes(UART_NUM_2, uartBuffer, BUF_SIZE, 5000 / portTICK_RATE_MS);
 
     }
 }
 
+/*=====[Definitions of external functions]===================================*/
+
+printerStatus_t print(printer_msg_t printer_msg)
+{
+	xQueueSend( printer_queue, ( void * ) &printer_msg, ( TickType_t ) 0 );
+	return PRINT_OK;
+}
+
 void appPrinter(void)
 {
+	printer_queue = xQueueCreate(1, sizeof(printer_msg_t));
+
     xTaskCreate(appUart_task, "appUart_task", 1024, NULL, 10, NULL);
 }

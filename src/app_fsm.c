@@ -8,20 +8,18 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/semphr.h"
-#include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "../inc/app_lcd.h"
 #include "../inc/app_gpio.h"
 #include "../inc/app_fsm.h"
 #include "../inc/app_adc.h"
+#include "../inc/app_printer.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
-#define ADC_ITERATION 5
+#define ADC_ITERATION 10
 
 /*=====[Definitions of extern global variables]==============================*/
-
-QueueHandle_t printer_queue;
 
 /*=====[Definitions of public global variables]==============================*/
 
@@ -125,9 +123,7 @@ void fsm_task (void*arg)
 	checkTafoInProgress_semphr = xSemaphoreCreateBinary();
 
 	deviceControl.configurated = 0;
-	deviceControl.printer_msg = PRINTER_FAIL;
-
-	printer_queue = xQueueCreate(1, sizeof(printer_msg_t));
+	deviceControl.printer_msg = TEST_FAIL;
 
 	xTaskCreate(checkTafo_task, "checkTafo_task", 1024 * 2, NULL, 5, NULL);
 
@@ -216,7 +212,7 @@ void fsm_task (void*arg)
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
 			deviceControl.test_state = WAIT_TEST;
 			appLcdSend(WAITING, NULL);
-			xQueueSend( printer_queue, ( void * ) &deviceControl.printer_msg, ( TickType_t ) 0 );
+			print(deviceControl.printer_msg);
 			break;
 		default:
 			vTaskDelay(500 / portTICK_PERIOD_MS);
