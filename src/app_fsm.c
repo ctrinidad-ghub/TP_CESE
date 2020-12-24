@@ -20,15 +20,6 @@
 
 #define ADC_ITERATION 10
 
-/*=====[Definitions of extern global variables]==============================*/
-
-/*=====[Definitions of public global variables]==============================*/
-
-/*=====[Definitions of private global variables]=============================*/
-
-SemaphoreHandle_t checkTafo_semphr;
-SemaphoreHandle_t checkTafoInProgress_semphr;
-
 typedef enum {
 	STARTUP,
     WAIT_TEST, // chequear que haya datos de configuracion
@@ -68,6 +59,15 @@ typedef struct {
 	printer_msg_t printer_msg;
 	trafoParameters_t trafoParameters;
 } deviceControl_t;
+
+/*=====[Definitions of extern global variables]==============================*/
+
+/*=====[Definitions of public global variables]==============================*/
+
+/*=====[Definitions of private global variables]=============================*/
+
+SemaphoreHandle_t checkTafo_semphr;
+SemaphoreHandle_t checkTafoInProgress_semphr;
 
 deviceControl_t deviceControl;
 
