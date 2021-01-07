@@ -8,17 +8,22 @@
 extern "C" {
 #endif
 
+typedef enum {
+	WIFI_CONNECTED,
+	WIFI_FAIL,
+} wifi_state_t;
+
 /**
  * @brief Initialize the WiFi feature
  * 
  */
-void app_WiFiInit(void);
+int app_WiFiInit(void);
 
 /**
  * @brief Connect to WiFi
  * 
  */
-void app_WiFiConnect(void);
+wifi_state_t app_WiFiConnect(void);
 
 /**
  * @brief Disconnect from WiFi

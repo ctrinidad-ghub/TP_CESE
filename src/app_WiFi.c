@@ -20,6 +20,7 @@
 #include "lwip/err.h"
 #include "lwip/sys.h"
 #include "esp_smartconfig.h"
+#include "../inc/app_WiFi.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
@@ -49,55 +50,17 @@ static EventGroupHandle_t s_wifi_event_group;
 static int s_retry_num = 0;
 char ip[100];
 
-uint8_t ssid[32]; // 32 == length of ssid in wifi_ap_config_t
-uint8_t password[65];
-bool bssid_set;
-uint8_t bssid[6];
+static uint8_t ssid[32]; // 32 == length of ssid in wifi_ap_config_t
+static uint8_t password[65];
+static bool bssid_set;
+static uint8_t bssid[6];
 
-uint8_t get_ssid = 0;
+static uint8_t get_ssid = 0;
 
 
 /*=====[Definitions of internal functions]===================================*/
 
-static void smartconfig_task(void * parm)
-{
-    EventBits_t uxBits;
-    ESP_ERROR_CHECK( esp_smartconfig_set_type(SC_TYPE_ESPTOUCH) );
-    smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK( esp_smartconfig_start(&cfg) );
-    while (1) {
-        uxBits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT | ESPTOUCH_DONE_BIT, true, false, portMAX_DELAY);
-        if(uxBits & WIFI_CONNECTED_BIT) {
-            //ESP_LOGI(TAG, "WiFi Connected to ap");
-        }
-        if(uxBits & ESPTOUCH_DONE_BIT) {
-            //ESP_LOGI(TAG, "smartconfig over");
-            esp_smartconfig_stop();
-            vTaskDelete(NULL);
-        }
-    }
-}
-
-void WiFiConnectToKnownAP(void){
-    wifi_config_t wifi_config;
-    bzero(&wifi_config, sizeof(wifi_config_t));
-    wifi_config.sta.pmf_cfg.capable = true;
-    wifi_config.sta.pmf_cfg.required = false;
-
-    // Initializing ssid
-    memcpy(wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
-	memcpy(wifi_config.sta.password, password, sizeof(wifi_config.sta.password));
-	wifi_config.sta.bssid_set = bssid_set;
-	if (wifi_config.sta.bssid_set == true) {
-		memcpy(wifi_config.sta.bssid, bssid, sizeof(wifi_config.sta.bssid));
-	}
-
-	ESP_ERROR_CHECK( esp_wifi_disconnect() );
-	ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
-	ESP_ERROR_CHECK( esp_wifi_connect() );
-}
-
-void writeSSIDData(void)
+static void writeSSIDData(void)
 {
 	nvs_handle_t my_handle;
 	esp_err_t err;
@@ -122,6 +85,46 @@ void writeSSIDData(void)
 	nvs_close(my_handle);
 }
 
+static void smartconfig_task(void * parm)
+{
+    EventBits_t uxBits;
+    ESP_ERROR_CHECK( esp_smartconfig_set_type(SC_TYPE_ESPTOUCH) );
+    smartconfig_start_config_t cfg = SMARTCONFIG_START_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK( esp_smartconfig_start(&cfg) );
+    while (1) {
+        uxBits = xEventGroupWaitBits(s_wifi_event_group, WIFI_CONNECTED_BIT | ESPTOUCH_DONE_BIT | WIFI_FAIL_BIT, true, false, portMAX_DELAY);
+        if(uxBits & WIFI_CONNECTED_BIT) {
+            // WiFi Connected to ap
+    		// Store the ssid and password
+    		writeSSIDData();
+        }
+        if((uxBits & ESPTOUCH_DONE_BIT) || (uxBits & WIFI_FAIL_BIT))  {
+            // smartconfig over
+            esp_smartconfig_stop();
+            vTaskDelete(NULL);
+        }
+    }
+}
+
+static void WiFiConnectToKnownAP(void){
+    wifi_config_t wifi_config;
+    bzero(&wifi_config, sizeof(wifi_config_t));
+    wifi_config.sta.pmf_cfg.capable = true;
+    wifi_config.sta.pmf_cfg.required = false;
+
+    // Initializing ssid
+    memcpy(wifi_config.sta.ssid, ssid, sizeof(wifi_config.sta.ssid));
+	memcpy(wifi_config.sta.password, password, sizeof(wifi_config.sta.password));
+	wifi_config.sta.bssid_set = bssid_set;
+	if (wifi_config.sta.bssid_set == true) {
+		memcpy(wifi_config.sta.bssid, bssid, sizeof(wifi_config.sta.bssid));
+	}
+
+	ESP_ERROR_CHECK( esp_wifi_disconnect() );
+	ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config) );
+	ESP_ERROR_CHECK( esp_wifi_connect() );
+}
+
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
 {
@@ -140,7 +143,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 			s_retry_num++;
 		}
 		else {
-			// TODO: if the connection failed 5 times in a row, ask for smartconfig
 			xEventGroupSetBits(s_wifi_event_group, WIFI_FAIL_BIT);
 		}
 	}
@@ -148,6 +150,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 		ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
 		strcpy(ip, ip4addr_ntoa(&event->ip_info.ip));
 		s_retry_num = 0;
+		xEventGroupClearBits(s_wifi_event_group, WIFI_FAIL_BIT);
 		xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
 	}
 	else if (event_base == SC_EVENT && event_id == SC_EVENT_SCAN_DONE) {
@@ -167,9 +170,6 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 			memcpy(bssid, evt->bssid, sizeof(bssid));
 		}
 
-		// store the ssid and password
-		writeSSIDData();
-
 		// try to connect
 		WiFiConnectToKnownAP();
 		get_ssid = 1;
@@ -179,7 +179,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 	}
 }
 
-int readSSIDData(void)
+static int readSSIDData(void)
 {
 	nvs_handle_t my_handle;
 	esp_err_t err;
@@ -215,9 +215,10 @@ void app_WiFiDisconnect(void)
     vEventGroupDelete(s_wifi_event_group);
 }
 
-void app_WiFiConnect(void)
+wifi_state_t app_WiFiConnect(void)
 {
     s_wifi_event_group = xEventGroupCreate();
+	s_retry_num = 0;
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -251,23 +252,25 @@ void app_WiFiConnect(void)
 
     /* Waiting until either the connection is established (WIFI_CONNECTED_BIT) or connection failed for the maximum
      * number of re-tries (WIFI_FAIL_BIT). The bits are set by event_handler() (see above) */
-    /*EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
+    EventBits_t bits = xEventGroupWaitBits(s_wifi_event_group,
             WIFI_CONNECTED_BIT | WIFI_FAIL_BIT,
             pdFALSE,
             pdFALSE,
             portMAX_DELAY);
-*/
+
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
-/*    if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID:%s password:%s",
-                 WIFI_SSID, WIFI_PASS);
+    if (bits & WIFI_CONNECTED_BIT) {
+        return WIFI_CONNECTED;
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID:%s, password:%s",
-                 WIFI_SSID, WIFI_PASS);
+    	app_WiFiDisconnect();
+    	get_ssid = 0;
+    	return WIFI_FAIL;
     } else {
-        ESP_LOGE(TAG, "UNEXPECTED EVENT");
-    }*/
+    	app_WiFiDisconnect();
+    	get_ssid = 0;
+    	return WIFI_FAIL;
+    }
 }
 
 int app_WiFiInit(void){

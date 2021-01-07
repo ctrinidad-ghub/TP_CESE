@@ -26,6 +26,36 @@
 #define WELCOME_3  "|       CESE       |"
 #define WELCOME_4  "+------------------+"
 
+//  WIFI_CONNECTING
+#define WIFI_CONNECTING_1  "+------------------+"
+#define WIFI_CONNECTING_2  "|  Estableciendo   |"
+#define WIFI_CONNECTING_3  "|  conexion WiFi   |"
+#define WIFI_CONNECTING_4  "+------------------+"
+
+//  WIFI_NO_SSID_AND_PASS
+#define WIFI_NO_SSID_AND_PASS_1  "+------------------+"
+#define WIFI_NO_SSID_AND_PASS_2  "| Fallo al intentar|"
+#define WIFI_NO_SSID_AND_PASS_3  "|  conectar a WiFi |"
+#define WIFI_NO_SSID_AND_PASS_4  "+------------------+"
+
+//  WIFI_SMARTCONFIG
+#define WIFI_SMARTCONFIG_1  "+------------------+"
+#define WIFI_SMARTCONFIG_2  "|  Configure WiFi  |"
+#define WIFI_SMARTCONFIG_3  "|  por SmartConfig |"
+#define WIFI_SMARTCONFIG_4  "+------------------+"
+
+//  WIFI_SMARTCONFIG_FAIL
+#define WIFI_SMARTCONFIG_FAIL_1  "+------------------+"
+#define WIFI_SMARTCONFIG_FAIL_2  "| Fallo al conectar|"
+#define WIFI_SMARTCONFIG_FAIL_3  "|  por SmartConfig |"
+#define WIFI_SMARTCONFIG_FAIL_4  "+------------------+"
+
+//  WIFI_SUCCESSFULLY_CONNECTED
+#define WIFI_SUCCESSFULLY_CONNECTED_1  "+------------------+"
+#define WIFI_SUCCESSFULLY_CONNECTED_2  "| Conectado a red  |"
+#define WIFI_SUCCESSFULLY_CONNECTED_3  "|       WiFi       |"
+#define WIFI_SUCCESSFULLY_CONNECTED_4  "+------------------+"
+
 //	WAITING
 #define WAITING_1  "+------------------+"
 #define WAITING_2  "|   Esperando...   |"
@@ -108,6 +138,41 @@ void appLcd_task(void *arg)
 			lcdSendString(WELCOME_2);
 			lcdSendString(WELCOME_3);
 			lcdSendString(WELCOME_4);
+			break;
+		case WIFI_CONNECTING:
+			lcdGoToXY(0,0);
+			lcdSendString(WIFI_CONNECTING_1);
+			lcdSendString(WIFI_CONNECTING_2);
+			lcdSendString(WIFI_CONNECTING_3);
+			lcdSendString(WIFI_CONNECTING_4);
+			break;
+		case WIFI_NO_SSID_AND_PASS:
+			lcdGoToXY(0,0);
+			lcdSendString(WIFI_NO_SSID_AND_PASS_1);
+			lcdSendString(WIFI_NO_SSID_AND_PASS_2);
+			lcdSendString(WIFI_NO_SSID_AND_PASS_3);
+			lcdSendString(WIFI_NO_SSID_AND_PASS_4);
+			break;
+		case WIFI_SMARTCONFIG_FAIL:
+			lcdGoToXY(0,0);
+			lcdSendString(WIFI_SMARTCONFIG_FAIL_1);
+			lcdSendString(WIFI_SMARTCONFIG_FAIL_2);
+			lcdSendString(WIFI_SMARTCONFIG_FAIL_3);
+			lcdSendString(WIFI_SMARTCONFIG_FAIL_4);
+			break;
+		case WIFI_SMARTCONFIG:
+			lcdGoToXY(0,0);
+			lcdSendString(WIFI_SMARTCONFIG_1);
+			lcdSendString(WIFI_SMARTCONFIG_2);
+			lcdSendString(WIFI_SMARTCONFIG_3);
+			lcdSendString(WIFI_SMARTCONFIG_4);
+			break;
+		case WIFI_SUCCESSFULLY_CONNECTED:
+			lcdGoToXY(0,0);
+			lcdSendString(WIFI_SUCCESSFULLY_CONNECTED_1);
+			lcdSendString(WIFI_SUCCESSFULLY_CONNECTED_2);
+			lcdSendString(WIFI_SUCCESSFULLY_CONNECTED_3);
+			lcdSendString(WIFI_SUCCESSFULLY_CONNECTED_4);
 			break;
 		case WAITING:
 			lcdGoToXY(0,0);

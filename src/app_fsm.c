@@ -22,6 +22,7 @@
 
 typedef enum {
 	STARTUP,
+	WIFI_CONNECTION,
     WAIT_TEST, // chequear que haya datos de configuracion
 	ASK_FOR_CONFIGURATION,
 	POWER_UP_PRIMARY,
@@ -115,6 +116,9 @@ void checkTafo_task (void*arg)
 
 void fsm_task (void*arg)
 {
+	esp_err_t err;
+	wifi_state_t wifi_state = WIFI_FAIL;
+
 	disconnectPrimarySecondary();
 
 	deviceControl.test_state = STARTUP;
@@ -140,8 +144,34 @@ void fsm_task (void*arg)
 
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
 			appAdcDisable();
-			app_WiFiInit();
-			app_WiFiConnect();
+			deviceControl.test_state = WIFI_CONNECTION;
+			break;
+		case WIFI_CONNECTION:
+			appLcdSend(WIFI_CONNECTING, NULL);
+			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			err = app_WiFiInit();
+			if (err != ESP_OK) {
+				appLcdSend(WIFI_NO_SSID_AND_PASS, NULL);
+				vTaskDelay(3000 / portTICK_PERIOD_MS);
+			}
+			else {
+				wifi_state = app_WiFiConnect();
+				if (wifi_state != WIFI_CONNECTED) {
+					appLcdSend(WIFI_NO_SSID_AND_PASS, NULL);
+					vTaskDelay(3000 / portTICK_PERIOD_MS);
+				}
+			}
+			while (wifi_state != WIFI_CONNECTED) {
+				appLcdSend(WIFI_SMARTCONFIG, NULL);
+				wifi_state = app_WiFiConnect();
+				if (wifi_state != WIFI_CONNECTED) {
+					appLcdSend(WIFI_SMARTCONFIG_FAIL, NULL);
+					vTaskDelay(3000 / portTICK_PERIOD_MS);
+				}
+			}
+			appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
+			vTaskDelay(3000 / portTICK_PERIOD_MS);
+
 			appLcdSend(WAITING, NULL);
 			deviceControl.test_state = WAIT_TEST;
 			break;

@@ -21,6 +21,11 @@ extern "C" {
  */
 typedef enum {
     WELCOME,                /*!<Welcome LCD message                             */
+	WIFI_CONNECTING,        /*!<Welcome LCD message                             */
+	WIFI_NO_SSID_AND_PASS,  /*!<Welcome LCD message                             */
+	WIFI_SMARTCONFIG,       /*!<Welcome LCD message                             */
+	WIFI_SMARTCONFIG_FAIL,
+	WIFI_SUCCESSFULLY_CONNECTED,
 	WAITING,                /*!<Welcome LCD message                             */
 	NOT_CONFIGURATED,       /*!<Welcome LCD message                             */
 	CONFIGURATION_OK,       /*!<Welcome LCD message                             */
