@@ -34,6 +34,7 @@ typedef enum {
 	POWER_DOWN_SECONDARY,
 	CHARACTERIZE_SECONDARY,
 	REPORT,
+	CANCEL_FSM
 } test_state_t;
 
 typedef enum {
@@ -59,6 +60,7 @@ typedef struct {
 	bool configurated;
 	printer_msg_t printer_msg;
 	trafoParameters_t trafoParameters;
+	uint8_t fsm_timer;
 } deviceControl_t;
 
 /*=====[Definitions of extern global variables]==============================*/
@@ -91,26 +93,16 @@ void checkTafo_task (void*arg)
 	while(1) {
 		xSemaphoreTake(checkTafo_semphr, portMAX_DELAY);
 
-		if (deviceControl.test_state == MEASURE_PRIMARY)
-		{
-			for (int i=0; i<ADC_ITERATION; i++) {
-				appAdcStart(&rms);
+		for (int i=0; i<ADC_ITERATION; i++) {
+			appAdcStart(&rms);
 
-				appLcdSend(MEASURING_PRIMARY, &rms);
-			}
-
-			xSemaphoreGive(checkTafoInProgress_semphr);
+			// TODO: add mutex to protect deviceControl.test_state
+			if (deviceControl.test_state == CANCEL_FSM) break;
+			else if (deviceControl.test_state == MEASURE_PRIMARY) appLcdSend(MEASURING_PRIMARY, &rms);
+			else if (deviceControl.test_state == MEASURE_SECONDARY) appLcdSend(MEASURING_SECONDARY, &rms);
 		}
-		else if (deviceControl.test_state == MEASURE_SECONDARY)
-		{
-			for (int i=0; i<ADC_ITERATION; i++) {
-				appAdcStart(&rms);
 
-				appLcdSend(MEASURING_SECONDARY, &rms);
-			}
-
-			xSemaphoreGive(checkTafoInProgress_semphr);
-		}
+		xSemaphoreGive(checkTafoInProgress_semphr);
 	}
 }
 
@@ -129,6 +121,7 @@ void fsm_task (void*arg)
 
 	deviceControl.configurated = 0;
 	deviceControl.printer_msg = TEST_FAIL;
+	deviceControl.fsm_timer = 0;
 
 	xTaskCreate(checkTafo_task, "checkTafo_task", 1024 * 2, NULL, 5, NULL);
 
@@ -182,6 +175,10 @@ void fsm_task (void*arg)
 				if ( isConfigurated() ) {
 					deviceControl.test_state = POWER_UP_PRIMARY;
 					app_WiFiDisconnect();
+					vTaskDelay(500 / portTICK_PERIOD_MS);
+					appAdcEnable();
+					connectPrimary();
+					deviceControl.fsm_timer = 0;
 				}
 				else {
 					deviceControl.test_state = ASK_FOR_CONFIGURATION;
@@ -200,7 +197,6 @@ void fsm_task (void*arg)
 					appLcdSend(WAITING, NULL);
 				}
 			}
-			vTaskDelay(500 / portTICK_PERIOD_MS);
 			break;
 		case ASK_FOR_CONFIGURATION:
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
@@ -208,53 +204,90 @@ void fsm_task (void*arg)
 			deviceControl.test_state = WAIT_TEST;
 			break;
 		case POWER_UP_PRIMARY:
-			appAdcEnable();
-			disconnectPrimarySecondary();
-			vTaskDelay(200 / portTICK_PERIOD_MS);
-			connectPrimary();
-			deviceControl.test_state = MEASURE_PRIMARY;
-			xSemaphoreGive(checkTafo_semphr);
+			if ( isCancelPressed( ) ) {
+				deviceControl.test_state = CANCEL_FSM;
+			}
+			else if (deviceControl.fsm_timer == 4) {
+				deviceControl.test_state = MEASURE_PRIMARY;
+				xSemaphoreGive(checkTafo_semphr);
+			} else deviceControl.fsm_timer++;
 			break;
 		case MEASURE_PRIMARY:
+			if ( isCancelPressed( ) ) {
+				deviceControl.test_state = CANCEL_FSM;
+			}
 			// Wait until the primary characterization is finished
-			xSemaphoreTake(checkTafoInProgress_semphr, portMAX_DELAY);
-			deviceControl.test_state = POWER_DOWN_PRIMARY;
+			else if (uxSemaphoreGetCount(checkTafoInProgress_semphr) == pdTRUE) {
+				xSemaphoreTake(checkTafoInProgress_semphr, portMAX_DELAY);
+				disconnectPrimarySecondary();
+				deviceControl.fsm_timer = 0;
+				deviceControl.test_state = POWER_DOWN_PRIMARY;
+			}
 			break;
 		case POWER_DOWN_PRIMARY:
-			disconnectPrimarySecondary();
-			vTaskDelay(200 / portTICK_PERIOD_MS);
-			deviceControl.test_state = POWER_UP_SECONDARY;
+			if ( isCancelPressed( ) ) {
+				deviceControl.test_state = CANCEL_FSM;
+			}
+			else if (deviceControl.fsm_timer == 4) {
+				deviceControl.fsm_timer = 0;
+				connectSecondary();
+				deviceControl.test_state = POWER_UP_SECONDARY;
+			} else deviceControl.fsm_timer++;
 			break;
 		case POWER_UP_SECONDARY:
-			disconnectPrimarySecondary();
-			vTaskDelay(200 / portTICK_PERIOD_MS);
-			connectSecondary();
-			deviceControl.test_state = MEASURE_SECONDARY;
-			xSemaphoreGive(checkTafo_semphr);
+			if ( isCancelPressed( ) ) {
+				deviceControl.test_state = CANCEL_FSM;
+			}
+			else if (deviceControl.fsm_timer == 4) {
+				deviceControl.test_state = MEASURE_SECONDARY;
+				xSemaphoreGive(checkTafo_semphr);
+			} else deviceControl.fsm_timer++;
 			break;
 		case MEASURE_SECONDARY:
+			if ( isCancelPressed( ) ) {
+				deviceControl.test_state = CANCEL_FSM;
+			}
 			// Wait until the secondary characterization is finished
-			xSemaphoreTake(checkTafoInProgress_semphr, portMAX_DELAY);
-			deviceControl.test_state = POWER_DOWN_SECONDARY;
+			else if (uxSemaphoreGetCount(checkTafoInProgress_semphr) == pdTRUE) {
+				xSemaphoreTake(checkTafoInProgress_semphr, portMAX_DELAY);
+				disconnectPrimarySecondary();
+				deviceControl.fsm_timer = 0;
+				deviceControl.test_state = POWER_DOWN_SECONDARY;
+			}
 			break;
 		case POWER_DOWN_SECONDARY:
 			disconnectPrimarySecondary();
-			vTaskDelay(200 / portTICK_PERIOD_MS);
 			deviceControl.test_state = REPORT;
 			break;
 		case REPORT:
 			appLcdSend(REPORT_LCD, NULL);
 			appAdcDisable();
+			vTaskDelay(300 / portTICK_PERIOD_MS);
 			app_WiFiConnect();
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			deviceControl.test_state = WAIT_TEST;
 			appLcdSend(WAITING, NULL);
+			deviceControl.test_state = WAIT_TEST;
 			print(deviceControl.printer_msg);
+			break;
+		case CANCEL_FSM:
+			appLcdSend(CANCEL_LCD, NULL);
+			disconnectPrimarySecondary();
+
+			// Wait until the ADC conversion finishes,
+			// if we are in the middle of an ADC conversion
+			xSemaphoreTake(checkTafoInProgress_semphr, 1000 / portTICK_PERIOD_MS);
+
+			if (appAdcStatus() == ENABLE) appAdcDisable();
+			app_WiFiConnect();
+			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			appLcdSend(WAITING, NULL);
+			deviceControl.test_state = WAIT_TEST;
 			break;
 		default:
 			vTaskDelay(500 / portTICK_PERIOD_MS);
 			break;
 		}
+		vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 
     vTaskDelete(NULL);

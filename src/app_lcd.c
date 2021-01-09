@@ -98,6 +98,12 @@
 #define REPORT_LCD_3  "|     reporte      |"
 #define REPORT_LCD_4  "+------------------+"
 
+//	CANCEL_LCD
+#define CANCEL_LCD_1  "+------------------+"
+#define CANCEL_LCD_2  "|   Cancelando     |"
+#define CANCEL_LCD_3  "|    espere..      |"
+#define CANCEL_LCD_4  "+------------------+"
+
 typedef struct {
 	lcd_msg_id_t lcd_msg_id;
 	rms_t rms;
@@ -233,6 +239,13 @@ void appLcd_task(void *arg)
 			lcdSendString(REPORT_LCD_2);
 			lcdSendString(REPORT_LCD_3);
 			lcdSendString(REPORT_LCD_4);
+			break;
+		case CANCEL_LCD:
+			lcdGoToXY(0,0);
+			lcdSendString(CANCEL_LCD_1);
+			lcdSendString(CANCEL_LCD_2);
+			lcdSendString(CANCEL_LCD_3);
+			lcdSendString(CANCEL_LCD_4);
 			break;
 		default:
 			break;

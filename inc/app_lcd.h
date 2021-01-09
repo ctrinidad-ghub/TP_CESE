@@ -33,6 +33,7 @@ typedef enum {
 	MEASURING_PRIMARY,      /*!<Welcome LCD message                             */
 	MEASURING_SECONDARY,    /*!<Welcome LCD message                             */
 	REPORT_LCD,             /*!<Welcome LCD message                             */
+	CANCEL_LCD
 } lcd_msg_id_t;
 
 /**

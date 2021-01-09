@@ -56,6 +56,14 @@ typedef struct {
 /** @endcond */
 
 /**
+ * @brief This enum type shows the ADC status
+ *
+ */
+typedef enum {
+	ENABLE, DISABLE, CONV
+} adc_status_enum_t;
+
+/**
  * @brief This struct type is used across the firmware to store the RMS values
  * 
  */
@@ -91,5 +99,11 @@ void appAdcEnable(void);
  * 
  */
 void appAdcDisable(void);
+
+/**
+ * @brief Return ADC status
+ *
+ */
+adc_status_enum_t appAdcStatus(void);
 
 #endif /* INC_APP_ADC_H_ */

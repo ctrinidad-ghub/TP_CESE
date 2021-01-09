@@ -17,17 +17,22 @@
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
+typedef struct {
+	adc_status_enum_t status;
+	QueueHandle_t adc_queue;
+	SemaphoreHandle_t startConv;
+} adc_status_t;
+
 /*=====[Definitions of extern global variables]==============================*/
 
 /*=====[Definitions of public global variables]==============================*/
 
 /*=====[Definitions of private global variables]=============================*/
 
+static adc_status_t adc_status;
 static adc_t adc[ADC_CHANNELS];
 static esp_adc_cal_characteristics_t *adc_chars;
 static rms_t rms;
-static QueueHandle_t adc_queue;
-static SemaphoreHandle_t startConv;
 static uint16_t I2SReadBuff[I2S_READ_LEN];
 
 /*=====[Definitions of internal functions]===================================*/
@@ -51,20 +56,30 @@ void appAdcEnable()
 
 	 //init ADC pad
 	 i2s_set_adc_mode(ADC_UNIT_1, adc[0].channel);
+
+	 adc_status.status = ENABLE;
 }
 
 void appAdcDisable(void){
+	adc_status.status = DISABLE;
 	i2s_driver_uninstall(I2S_NUM_0);
+}
+
+adc_status_enum_t appAdcStatus(void){
+	return adc_status.status;
 }
 
 void appAdcStart(rms_t *rms)
 {
 	rms_t rms_;
+	adc_status.status = CONV;
 
 	// Start conversion
-	xSemaphoreGive(startConv);
+	xSemaphoreGive(adc_status.startConv);
 
-	xQueueReceive(adc_queue, &rms_, portMAX_DELAY);
+	xQueueReceive(adc_status.adc_queue, &rms_, portMAX_DELAY);
+
+	adc_status.status = ENABLE;
 	rms->Vp = rms_.Vp;
 	rms->Ip = rms_.Ip;
 	rms->Vs = rms_.Vs;
@@ -108,9 +123,9 @@ void adc_dma_task(void*arg)
 			adc[adcIndex].sum_voltage = 0;
 			if (adcIndex == ADC_CHANNELS-1) {
 				adcIndex = 0;
-				if (adc_init == 1) xQueueSend( adc_queue, ( void * ) &rms, ( TickType_t ) 0 );
+				if (adc_init == 1) xQueueSend( adc_status.adc_queue, ( void * ) &rms, ( TickType_t ) 0 );
 				adc_init = 1;
-				xSemaphoreTake(startConv, portMAX_DELAY);
+				xSemaphoreTake(adc_status.startConv, portMAX_DELAY);
 			}
 			else adcIndex++;
 		}
@@ -156,13 +171,13 @@ void appAdcInit(void)
 		adc1_config_channel_atten(adc[adcIndex].channel, (adc_atten_t) ATTEN);
 	}
 
-	adc_queue = xQueueCreate(1, sizeof(rms_t));
-	if( adc_queue == NULL )
+	adc_status.adc_queue = xQueueCreate(1, sizeof(rms_t));
+	if( adc_status.adc_queue == NULL )
 	{
 		/* Queue was not created and must not be used. */
 	}
 
-	startConv = xSemaphoreCreateBinary();
+	adc_status.startConv = xSemaphoreCreateBinary();
 
 	//Characterize ADC
 	adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
