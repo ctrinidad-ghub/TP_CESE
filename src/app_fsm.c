@@ -15,6 +15,8 @@
 #include "../inc/app_adc.h"
 #include "../inc/app_printer.h"
 #include "../inc/app_WiFi.h"
+#include "../inc/app_Comm.h"
+#include "../inc/http_client.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
@@ -23,7 +25,8 @@
 typedef enum {
 	STARTUP,
 	WIFI_CONNECTION,
-    WAIT_TEST, // chequear que haya datos de configuracion
+    WAIT_TEST,
+	CONFIGURATING,
 	ASK_FOR_CONFIGURATION,
 	POWER_UP_PRIMARY,
 	MEASURE_PRIMARY,
@@ -61,6 +64,7 @@ typedef struct {
 	printer_msg_t printer_msg;
 	trafoParameters_t trafoParameters;
 	uint8_t fsm_timer;
+	configData_t configData;
 } deviceControl_t;
 
 /*=====[Definitions of extern global variables]==============================*/
@@ -73,6 +77,8 @@ SemaphoreHandle_t checkTafo_semphr;
 SemaphoreHandle_t checkTafoInProgress_semphr;
 
 deviceControl_t deviceControl;
+#define MAX_HTTP_RECV_BUFFER 2048
+char rxHttp [MAX_HTTP_RECV_BUFFER] = "{ \"id_Dispositivo\": 1, \"lote_partida\": \"20200201-1\", \"test_Numero\": 4, \"tension_linea\": 220, \"corriente_vacio\": 40 }";
 
 /*=====[Definitions of internal functions]===================================*/
 
@@ -82,8 +88,16 @@ bool isConfigurated(void)
 }
 bool configurate(void)
 {
-	deviceControl.configurated = 1;
-	return 1;
+	esp_err_t err;
+
+	err = get_http_config(rxHttp, MAX_HTTP_RECV_BUFFER);
+
+	if (err == ESP_OK){
+		processRxData(rxHttp, &deviceControl.configData);
+		deviceControl.configurated = 1;
+	} else deviceControl.configurated = 0;
+
+	return (deviceControl.configurated);
 }
 
 void checkTafo_task (void*arg)
@@ -125,7 +139,7 @@ void fsm_task (void*arg)
 
 	xTaskCreate(checkTafo_task, "checkTafo_task", 1024 * 2, NULL, 5, NULL);
 
-	// Wait until the LCD has initiate
+	// Wait until the LCD has initiated
 	vTaskDelay(3000 / portTICK_PERIOD_MS);
 
 	while (1) {
@@ -186,17 +200,21 @@ void fsm_task (void*arg)
 				}
 			}
 			if ( isConfigPressed( ) ) {
-				if( configurate() ){
-					appLcdSend(CONFIGURATION_OK, NULL);
-					vTaskDelay(3000 / portTICK_PERIOD_MS);
-					appLcdSend(WAITING, NULL);
-				}
-				else {
-					appLcdSend(CONFIGURATION_FAIL, NULL);
-					vTaskDelay(3000 / portTICK_PERIOD_MS);
-					appLcdSend(WAITING, NULL);
-				}
+				appLcdSend(CONFIGURATING_LCD, NULL);
+				deviceControl.test_state = CONFIGURATING;
 			}
+			break;
+		case CONFIGURATING:
+			if( configurate() ){
+				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				appLcdSend(CONFIGURATION_OK, NULL);
+			}
+			else {
+				appLcdSend(CONFIGURATION_FAIL, NULL);
+			}
+			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			appLcdSend(WAITING, NULL);
+			deviceControl.test_state = WAIT_TEST;
 			break;
 		case ASK_FOR_CONFIGURATION:
 			vTaskDelay(3000 / portTICK_PERIOD_MS);

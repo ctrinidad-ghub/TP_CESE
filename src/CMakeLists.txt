@@ -8,8 +8,12 @@ idf_component_register(SRCS "main.c"
 						SRCS "app_gpio.c"
 						SRCS "app_WiFi.c"
 						SRCS "button.c"
+						SRCS "app_Comm.c"
+						SRCS "http_client.c"
                       INCLUDE_DIRS "../inc"
                       REQUIRES "esp_adc_cal"
                       REQUIRES "spi_flash"
-                      REQUIRES "nvs_flash")
+                      REQUIRES "nvs_flash"
+                      REQUIRES "esp_http_client"
+                      REQUIRES "esp-tls")
                    

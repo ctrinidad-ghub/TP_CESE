@@ -62,6 +62,12 @@
 #define WAITING_3  "|  Test o Config   |"
 #define WAITING_4  "+------------------+"
 
+// CONFIGURATING_LCD
+#define CONFIGURATING_LCD_1  "+------------------+"
+#define CONFIGURATING_LCD_2  "|   Configurando   |"
+#define CONFIGURATING_LCD_3  "|     Espere...    |"
+#define CONFIGURATING_LCD_4  "+------------------+"
+
 //  NOT_CONFIGURATED
 #define NOT_CONFIGURATED_1  "+------------------+"
 #define NOT_CONFIGURATED_2  "|    Equipo no     |"
@@ -187,12 +193,26 @@ void appLcd_task(void *arg)
 			lcdSendString(WAITING_3);
 			lcdSendString(WAITING_4);
 			break;
+		case CONFIGURATING_LCD:
+			lcdGoToXY(0,0);
+			lcdSendString(CONFIGURATING_LCD_1);
+			lcdSendString(CONFIGURATING_LCD_2);
+			lcdSendString(CONFIGURATING_LCD_3);
+			lcdSendString(CONFIGURATING_LCD_4);
+			break;
 		case CONFIGURATION_OK:
 			lcdGoToXY(0,0);
 			lcdSendString(CONFIGURATION_OK_1);
 			lcdSendString(CONFIGURATION_OK_2);
 			lcdSendString(CONFIGURATION_OK_3);
 			lcdSendString(CONFIGURATION_OK_4);
+			break;
+		case CONFIGURATION_FAIL:
+			lcdGoToXY(0,0);
+			lcdSendString(CONFIGURATION_FAIL_1);
+			lcdSendString(CONFIGURATION_FAIL_2);
+			lcdSendString(CONFIGURATION_FAIL_3);
+			lcdSendString(CONFIGURATION_FAIL_4);
 			break;
 		case NOT_CONFIGURATED:
 			lcdGoToXY(0,0);

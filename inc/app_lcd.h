@@ -27,6 +27,7 @@ typedef enum {
 	WIFI_SMARTCONFIG_FAIL,
 	WIFI_SUCCESSFULLY_CONNECTED,
 	WAITING,                /*!<Welcome LCD message                             */
+	CONFIGURATING_LCD,
 	NOT_CONFIGURATED,       /*!<Welcome LCD message                             */
 	CONFIGURATION_OK,       /*!<Welcome LCD message                             */
 	CONFIGURATION_FAIL,     /*!<Welcome LCD message                             */
