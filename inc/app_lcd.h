@@ -20,21 +20,21 @@ extern "C" {
  * 
  */
 typedef enum {
-    WELCOME,                /*!<Welcome LCD message                             */
-	WIFI_CONNECTING,        /*!<Welcome LCD message                             */
-	WIFI_NO_SSID_AND_PASS,  /*!<Welcome LCD message                             */
-	WIFI_SMARTCONFIG,       /*!<Welcome LCD message                             */
-	WIFI_SMARTCONFIG_FAIL,
-	WIFI_SUCCESSFULLY_CONNECTED,
-	WAITING,                /*!<Welcome LCD message                             */
-	CONFIGURATING_LCD,
-	NOT_CONFIGURATED,       /*!<Welcome LCD message                             */
-	CONFIGURATION_OK,       /*!<Welcome LCD message                             */
-	CONFIGURATION_FAIL,     /*!<Welcome LCD message                             */
-	MEASURING_PRIMARY,      /*!<Welcome LCD message                             */
-	MEASURING_SECONDARY,    /*!<Welcome LCD message                             */
-	REPORT_LCD,             /*!<Welcome LCD message                             */
-	CANCEL_LCD
+    WELCOME,                    /*!<Welcome LCD message                                */
+	WIFI_CONNECTING,            /*!<WiFi connection in progress LCD message            */
+	WIFI_NO_SSID_AND_PASS,      /*!<Failing at trying to connect into WiFi LCD message */
+	WIFI_SMARTCONFIG,           /*!<Ask for Smart Config WiFi app LCD message          */
+	WIFI_SMARTCONFIG_FAIL,      /*!<Failing at trying to configure WiFi by Smart Config app LCD message  */
+	WIFI_SUCCESSFULLY_CONNECTED,/*!<WiFi connection successfully LCD message           */
+	WAITING,                    /*!<Waiting for Test or Config LCD message             */
+	CONFIGURATING_LCD,          /*!<Configuration device LCD message                   */
+	NOT_CONFIGURED,             /*!<Device is not configured LCD message               */
+	CONFIGURATION_OK,           /*!<Device configured successfully LCD message         */
+	CONFIGURATION_FAIL,         /*!<Device configured unsuccessfully LCD message       */
+	MEASURING_PRIMARY,          /*!<Measuring Primary Coil LCD message                 */
+	MEASURING_SECONDARY,        /*!<Measuring Secondary Coil LCD message               */
+	REPORT_LCD,                 /*!<Reporting LCD message                              */
+	CANCEL_LCD                  /*!<Cancling LCD message                               */
 } lcd_msg_id_t;
 
 /**
@@ -47,7 +47,7 @@ void appLcdInit(void);
  * @brief Send a lcd_msg_id_t to the LCD
  * 
  * @param lcd_msg_id Message to send
- * @param rms Pointer to an struct that constain the RMS values to show
+ * @param rms Pointer to an struct that contains the RMS values to show
  * 
  * @note The rms pointer is optional and depends on the lcd_msg_id to send
  * 

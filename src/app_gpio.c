@@ -114,5 +114,10 @@ void appGpioInit( void )
 {
 	trafoPinInit( );
 
-	xTaskCreate(button_task, "button_task", 1024 * 2, NULL, 5, NULL);
+	BaseType_t res = xTaskCreate(button_task, "button_task", 1024 * 2, NULL, 5, NULL);
+	if (res != pdPASS)
+	{
+		// TODO: Define error policy
+		while(1);
+	}
 }

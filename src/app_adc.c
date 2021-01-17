@@ -172,19 +172,29 @@ void appAdcInit(void)
 	}
 
 	adc_status.adc_queue = xQueueCreate(1, sizeof(rms_t));
-	if( adc_status.adc_queue == NULL )
-	{
-		/* Queue was not created and must not be used. */
-	}
-
 	adc_status.startConv = xSemaphoreCreateBinary();
+	if(adc_status.adc_queue == NULL || adc_status.startConv == NULL)
+	{
+		// TODO: Define error policy
+		while(1);
+	}
 
 	//Characterize ADC
 	adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
+	if( adc_chars == NULL)
+	{
+		// TODO: Define error policy
+		while(1);
+	}
 	esp_adc_cal_characterize((adc_unit_t) ADC_UNIT_1, (adc_atten_t) ATTEN, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
 
 	appAdcEnable();
-	xTaskCreate(adc_dma_task, "adc_dma_task", 1024 * 4, NULL, 5, NULL);
+	BaseType_t res = xTaskCreate(adc_dma_task, "adc_dma_task", 1024 * 4, NULL, 5, NULL);
+	if (res != pdPASS)
+	{
+		// TODO: Define error policy
+		while(1);
+	}
 }
 
 

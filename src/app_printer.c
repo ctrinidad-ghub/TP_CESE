@@ -85,6 +85,16 @@ printerStatus_t print(printer_msg_t printer_msg)
 void appPrinter(void)
 {
 	printer_queue = xQueueCreate(1, sizeof(printer_msg_t));
+    if(printer_queue == NULL)
+	{
+		// TODO: Define error policy
+		while(1);
+	}
 
-    xTaskCreate(appUart_task, "appUart_task", 1024, NULL, 10, NULL);
+    BaseType_t res = xTaskCreate(appUart_task, "appUart_task", 1024, NULL, 10, NULL);
+    if (res != pdPASS)
+	{
+		// TODO: Define error policy
+		while(1);
+	}
 }
