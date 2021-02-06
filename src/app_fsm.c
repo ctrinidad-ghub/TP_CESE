@@ -43,12 +43,6 @@ typedef enum {
 	BLOCK_DEVICE
 } test_state_t;
 
-typedef enum {
-    WAIT_CONFIG,
-	REQUEST_CONFIG_PARAMETERS,
-
-} config_state_t;
-
 typedef struct {
 	int32_t max;
 	int32_t min;
@@ -198,7 +192,7 @@ void fsm_task (void*arg)
 			appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
 
-			appLcdSend(WAITING, NULL);
+			appLcdSend(WAIT_CONFIG, NULL);
 			deviceControl.test_state = WAIT_TEST;
 			break;
 
@@ -214,6 +208,7 @@ void fsm_task (void*arg)
 						vTaskDelay(3000 / portTICK_PERIOD_MS);
 						countWiFiAttempt++;
 						if (countWiFiAttempt == 3) {
+							appLcdSend(BLOCK_DEVICE_LCD, NULL);
 							deviceControl.test_state = BLOCK_DEVICE;
 							break;
 						}
@@ -223,11 +218,12 @@ void fsm_task (void*arg)
 					appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
 					vTaskDelay(3000 / portTICK_PERIOD_MS);
 
-					appLcdSend(WAITING, NULL);
+					appLcdSend(WAIT_CONFIG, NULL);
 					deviceControl.test_state = WAIT_TEST;
 				}
 			}
 			if ( isCancelPressed( ) ) {
+				appLcdSend(BLOCK_DEVICE_LCD, NULL);
 				deviceControl.test_state = BLOCK_DEVICE;
 			}
 			break;
@@ -257,17 +253,19 @@ void fsm_task (void*arg)
 			if( configurate() ){
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
 				appLcdSend(CONFIGURATION_OK, NULL);
+				vTaskDelay(3000 / portTICK_PERIOD_MS);
+			    appLcdSend(WAITING, NULL);
 			}
 			else {
 				appLcdSend(CONFIGURATION_FAIL, NULL);
-			}
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			appLcdSend(WAITING, NULL);
+			    vTaskDelay(3000 / portTICK_PERIOD_MS);
+			    appLcdSend(WAIT_CONFIG, NULL);
+			} 
 			deviceControl.test_state = WAIT_TEST;
 			break;
 		case ASK_FOR_CONFIGURATION:
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			appLcdSend(WAITING, NULL);
+			appLcdSend(WAIT_CONFIG, NULL);
 			deviceControl.test_state = WAIT_TEST;
 			break;
 		case POWER_UP_PRIMARY:
@@ -346,6 +344,7 @@ void fsm_task (void*arg)
 			if (deviceControl.wifi_state != WIFI_CONNECTED) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				appLcdSend(BLOCK_DEVICE_LCD, NULL);
 				deviceControl.test_state = BLOCK_DEVICE;
 				break;
 			}
@@ -356,7 +355,7 @@ void fsm_task (void*arg)
 			if (err != ESP_OK) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
-				appLcdSend(WAITING, NULL);
+				appLcdSend(BLOCK_DEVICE_WEB_SERVER_LCD, NULL);
 				deviceControl.test_state = BLOCK_DEVICE;
 				break;
 			}
@@ -382,6 +381,7 @@ void fsm_task (void*arg)
 			if (deviceControl.wifi_state != WIFI_CONNECTED) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				appLcdSend(BLOCK_DEVICE_LCD, NULL);
 				deviceControl.test_state = BLOCK_DEVICE;
 				break;
 			}
@@ -390,7 +390,7 @@ void fsm_task (void*arg)
 			deviceControl.test_state = WAIT_TEST;
 			break;
 		default:
-			appLcdSend(BLOCK_DEVICE_LCD, NULL);
+
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
 			break;
 		}
