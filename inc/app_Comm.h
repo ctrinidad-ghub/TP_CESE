@@ -36,6 +36,15 @@ typedef struct {
  */
 void processRxData(char* rx_buff, configData_t *configData);
 
+/**
+ * @brief Perform tx package to be send to the web server
+ *
+ * @param rx_buff Tx buffer to send to the web server
+ * @param configData Pointer to a configuration struct to store the data
+ *
+ */
+void processTxData(char* tx_buff, configData_t *configData);
+
 #ifdef __cplusplus
 }
 #endif

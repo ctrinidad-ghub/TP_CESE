@@ -153,13 +153,13 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 		xEventGroupSetBits(s_wifi_event_group, WIFI_CONNECTED_BIT);
 	}
 	else if (event_base == SC_EVENT && event_id == SC_EVENT_SCAN_DONE) {
-		//ESP_LOGI(TAG, "Scan done");
+		// Scan done
 	}
 	else if (event_base == SC_EVENT && event_id == SC_EVENT_FOUND_CHANNEL) {
-		//ESP_LOGI(TAG, "Found channel");
+		// Found channel
 	}
 	else if (event_base == SC_EVENT && event_id == SC_EVENT_GOT_SSID_PSWD) {
-		//ESP_LOGI(TAG, "Got SSID and password");
+		// Got SSID and password
 
 		smartconfig_event_got_ssid_pswd_t *evt = (smartconfig_event_got_ssid_pswd_t *)event_data;
 		memcpy(ssid, evt->ssid, sizeof(evt->ssid));
@@ -204,7 +204,7 @@ static int readSSIDData(void)
 
 /*=====[Definitions of external functions]===================================*/
 
-void app_WiFiDisconnect(void)
+wifi_state_t app_WiFiDisconnect(void)
 {
 	ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler));
 	ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler));
@@ -212,6 +212,8 @@ void app_WiFiDisconnect(void)
 	esp_wifi_stop();
     esp_wifi_deinit();
     vEventGroupDelete(s_wifi_event_group);
+
+    return(WIFI_DISCONNECTED);
 }
 
 wifi_state_t app_WiFiConnect(void)

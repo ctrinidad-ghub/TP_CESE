@@ -41,11 +41,23 @@ typedef struct {
 #define WIFI_CONNECTING_3  "|  conexion WiFi   |\0"
 #define WIFI_CONNECTING_4  "+------------------+\0"
 
+//  BLOCK_DEVICE_LCD
+#define BLOCK_DEVICE_1  "+------------------+\0"
+#define BLOCK_DEVICE_2  "|Sin conexion WiFi |\0"
+#define BLOCK_DEVICE_3  "| Equipo bloqueado |\0"
+#define BLOCK_DEVICE_4  "+------------------+\0"
+
 //  WIFI_NO_SSID_AND_PASS
 #define WIFI_NO_SSID_AND_PASS_1  "+------------------+\0"
 #define WIFI_NO_SSID_AND_PASS_2  "| Fallo al intentar|\0"
 #define WIFI_NO_SSID_AND_PASS_3  "|  conectar a WiFi |\0"
 #define WIFI_NO_SSID_AND_PASS_4  "+------------------+\0"
+
+//  USE_WIFI_CONFIG
+#define USE_WIFI_CONFIG_1  "+------------------+\0"
+#define USE_WIFI_CONFIG_2  "| Desea configurar |\0"
+#define USE_WIFI_CONFIG_3  "| WiFi nuevamente? |\0"
+#define USE_WIFI_CONFIG_4  "+------------------+\0"
 
 //  WIFI_SMARTCONFIG
 #define WIFI_SMARTCONFIG_1  "+------------------+\0"
@@ -113,6 +125,12 @@ typedef struct {
 #define REPORT_LCD_3  "|     reporte      |\0"
 #define REPORT_LCD_4  "+------------------+\0"
 
+//  FAILED_REPORT_LCD
+#define FAILED_REPORT_LCD_1  "+------------------+\0"
+#define FAILED_REPORT_LCD_2  "| Fallo al enviar  |\0"
+#define FAILED_REPORT_LCD_3  "|reporte al webserv|\0"
+#define FAILED_REPORT_LCD_4  "+------------------+\0"
+
 //	CANCEL_LCD
 #define CANCEL_LCD_1  "+------------------+\0"
 #define CANCEL_LCD_2  "|   Cancelando     |\0"
@@ -123,6 +141,7 @@ const lcd_msg lcd_text [] = {
 	{WELCOME_1, WELCOME_2, WELCOME_3, WELCOME_4},
 	{WIFI_CONNECTING_1, WIFI_CONNECTING_2, WIFI_CONNECTING_3, WIFI_CONNECTING_4},
 	{WIFI_NO_SSID_AND_PASS_1, WIFI_NO_SSID_AND_PASS_2, WIFI_NO_SSID_AND_PASS_3, WIFI_NO_SSID_AND_PASS_4},
+	{USE_WIFI_CONFIG_1, USE_WIFI_CONFIG_2, USE_WIFI_CONFIG_3, USE_WIFI_CONFIG_4},
 	{WIFI_SMARTCONFIG_1, WIFI_SMARTCONFIG_2, WIFI_SMARTCONFIG_3, WIFI_SMARTCONFIG_4},
 	{WIFI_SMARTCONFIG_FAIL_1, WIFI_SMARTCONFIG_FAIL_2, WIFI_SMARTCONFIG_FAIL_3, WIFI_SMARTCONFIG_FAIL_4},
 	{WIFI_SUCCESSFULLY_CONNECTED_1, WIFI_SUCCESSFULLY_CONNECTED_2, WIFI_SUCCESSFULLY_CONNECTED_3, WIFI_SUCCESSFULLY_CONNECTED_4},
@@ -134,7 +153,9 @@ const lcd_msg lcd_text [] = {
 	{MEASURING_PRIMARY_1, MEASURING_PRIMARY_2, MEASURING_PRIMARY_3, MEASURING_PRIMARY_4},
 	{MEASURING_SECONDARY_1, MEASURING_SECONDARY_2, MEASURING_SECONDARY_3, MEASURING_SECONDARY_4},
 	{REPORT_LCD_1, REPORT_LCD_2, REPORT_LCD_3, REPORT_LCD_4},
-	{CANCEL_LCD_1, CANCEL_LCD_2, CANCEL_LCD_3, CANCEL_LCD_4}
+	{FAILED_REPORT_LCD_1, FAILED_REPORT_LCD_2, FAILED_REPORT_LCD_3, FAILED_REPORT_LCD_4},
+	{CANCEL_LCD_1, CANCEL_LCD_2, CANCEL_LCD_3, CANCEL_LCD_4},
+	{BLOCK_DEVICE_1, BLOCK_DEVICE_2, BLOCK_DEVICE_3, BLOCK_DEVICE_4}
 };
 
 typedef struct {

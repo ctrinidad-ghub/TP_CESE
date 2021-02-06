@@ -1,5 +1,10 @@
-/*
- * */
+/**
+ * @file app_WiFi.h
+ *
+ * @brief
+ *
+ * @author Cristian Trinidad
+ */
 
 #ifndef _APP_WIFI_H_
 #define _APP_WIFI_H_
@@ -8,8 +13,14 @@
 extern "C" {
 #endif
 
+/**
+ * @brief WiFi status
+ *
+ */
 typedef enum {
+	WIFI_NO_INIT,
 	WIFI_CONNECTED,
+	WIFI_DISCONNECTED,
 	WIFI_FAIL,
 } wifi_state_t;
 
@@ -29,7 +40,7 @@ wifi_state_t app_WiFiConnect(void);
  * @brief Disconnect from WiFi
  * 
  */
-void app_WiFiDisconnect(void);
+wifi_state_t app_WiFiDisconnect(void);
 
 #ifdef __cplusplus
 }

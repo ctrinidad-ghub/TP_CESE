@@ -26,6 +26,7 @@
 typedef enum {
 	STARTUP,
 	WIFI_CONNECTION,
+	WIFI_CONFIG,
     WAIT_TEST,
 	CONFIGURATING,
 	ASK_FOR_CONFIGURATION,
@@ -38,7 +39,8 @@ typedef enum {
 	POWER_DOWN_SECONDARY,
 	CHARACTERIZE_SECONDARY,
 	REPORT,
-	CANCEL_FSM
+	CANCEL_FSM,
+	BLOCK_DEVICE
 } test_state_t;
 
 typedef enum {
@@ -69,6 +71,7 @@ typedef struct {
 	SemaphoreHandle_t checkTafo_semphr;
 	SemaphoreHandle_t checkTafoInProgress_semphr;
 	SemaphoreHandle_t test_state_mutex;
+	wifi_state_t wifi_state;
 } deviceControl_t;
 
 /*=====[Definitions of extern global variables]==============================*/
@@ -77,9 +80,9 @@ typedef struct {
 
 /*=====[Definitions of private global variables]=============================*/
 
-deviceControl_t deviceControl;
+static deviceControl_t deviceControl;
 
-char rxHttp [MAX_HTTP_RECV_BUFFER] = "{ \"id_Dispositivo\": 1, \"lote_partida\": \"20200201-1\", \"test_Numero\": 4, \"tension_linea\": 220, \"corriente_vacio\": 40 }";
+static char buffHttp [MAX_HTTP_RECV_BUFFER];
 
 /*=====[Definitions of internal functions]===================================*/
 
@@ -91,10 +94,12 @@ bool configurate(void)
 {
 	esp_err_t err;
 
-	err = get_http_config(rxHttp, MAX_HTTP_RECV_BUFFER);
+	for(int i=0; i<sizeof(buffHttp);i++) buffHttp[i] = 0;
+
+	err = get_http_config(buffHttp, MAX_HTTP_RECV_BUFFER);
 
 	if (err == ESP_OK){
-		processRxData(rxHttp, &deviceControl.configData);
+		processRxData(buffHttp, &deviceControl.configData);
 		deviceControl.configurated = 1;
 	} else deviceControl.configurated = 0;
 
@@ -128,11 +133,12 @@ void checkTafo_task (void*arg)
 void fsm_task (void*arg)
 {
 	esp_err_t err;
-	wifi_state_t wifi_state = WIFI_FAIL;
+	uint8_t countWiFiAttempt = 0;
 
 	disconnectPrimarySecondary();
 
 	deviceControl.test_state = STARTUP;
+	deviceControl.wifi_state = WIFI_NO_INIT;
 
 	// Create semaphores and mutex
 	deviceControl.checkTafo_semphr = xSemaphoreCreateBinary();
@@ -176,27 +182,54 @@ void fsm_task (void*arg)
 			if (err != ESP_OK) {
 				appLcdSend(WIFI_NO_SSID_AND_PASS, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				deviceControl.test_state = WIFI_CONFIG;
+				break;
 			}
 			else {
-				wifi_state = app_WiFiConnect();
-				if (wifi_state != WIFI_CONNECTED) {
+				deviceControl.wifi_state = app_WiFiConnect();
+				if (deviceControl.wifi_state != WIFI_CONNECTED) {
 					appLcdSend(WIFI_NO_SSID_AND_PASS, NULL);
 					vTaskDelay(3000 / portTICK_PERIOD_MS);
+					deviceControl.test_state = WIFI_CONFIG;
+					break;
 				}
 			}
-			while (wifi_state != WIFI_CONNECTED) {
-				appLcdSend(WIFI_SMARTCONFIG, NULL);
-				wifi_state = app_WiFiConnect();
-				if (wifi_state != WIFI_CONNECTED) {
-					appLcdSend(WIFI_SMARTCONFIG_FAIL, NULL);
-					vTaskDelay(3000 / portTICK_PERIOD_MS);
-				}
-			}
+
 			appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
 
 			appLcdSend(WAITING, NULL);
 			deviceControl.test_state = WAIT_TEST;
+			break;
+
+		case WIFI_CONFIG:
+			appLcdSend(USE_WIFI_CONFIG, NULL);
+			if ( isConfigPressed( ) ) {
+				countWiFiAttempt = 0;
+				while (deviceControl.wifi_state != WIFI_CONNECTED) {
+					appLcdSend(WIFI_SMARTCONFIG, NULL);
+					deviceControl.wifi_state = app_WiFiConnect();
+					if (deviceControl.wifi_state != WIFI_CONNECTED) {
+						appLcdSend(WIFI_SMARTCONFIG_FAIL, NULL);
+						vTaskDelay(3000 / portTICK_PERIOD_MS);
+						countWiFiAttempt++;
+						if (countWiFiAttempt == 3) {
+							deviceControl.test_state = BLOCK_DEVICE;
+							break;
+						}
+					}
+				}
+				if (deviceControl.wifi_state == WIFI_CONNECTED) {
+					appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
+					vTaskDelay(3000 / portTICK_PERIOD_MS);
+
+					appLcdSend(WAITING, NULL);
+					deviceControl.test_state = WAIT_TEST;
+				}
+			}
+			if ( isCancelPressed( ) ) {
+				deviceControl.test_state = BLOCK_DEVICE;
+			}
 			break;
 		case WAIT_TEST:
 			disconnectPrimarySecondary();
@@ -204,7 +237,7 @@ void fsm_task (void*arg)
 			if ( isTestPressed( ) ) {
 				if ( isConfigurated() ) {
 					deviceControl.test_state = POWER_UP_PRIMARY;
-					app_WiFiDisconnect();
+					deviceControl.wifi_state = app_WiFiDisconnect();
 					vTaskDelay(500 / portTICK_PERIOD_MS);
 					appAdcEnable();
 					connectPrimary();
@@ -307,11 +340,32 @@ void fsm_task (void*arg)
 			appLcdSend(REPORT_LCD, NULL);
 			appAdcDisable();
 			vTaskDelay(300 / portTICK_PERIOD_MS);
-			app_WiFiConnect();
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
+
+			// Reconnect to WiFi
+			deviceControl.wifi_state = app_WiFiConnect();
+			if (deviceControl.wifi_state != WIFI_CONNECTED) {
+				appLcdSend(FAILED_REPORT_LCD, NULL);
+				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				deviceControl.test_state = BLOCK_DEVICE;
+				break;
+			}
+
+			// Write test results to the web server
+			processTxData(buffHttp, &deviceControl.configData);
+			err = post_http_results(buffHttp);
+			if (err != ESP_OK) {
+				appLcdSend(FAILED_REPORT_LCD, NULL);
+				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				appLcdSend(WAITING, NULL);
+				deviceControl.test_state = BLOCK_DEVICE;
+				break;
+			}
+
+			// Send data to the printer
+			print(deviceControl.printer_msg);
+
 			appLcdSend(WAITING, NULL);
 			deviceControl.test_state = WAIT_TEST;
-			print(deviceControl.printer_msg);
 			break;
 		case CANCEL_FSM:
 			appLcdSend(CANCEL_LCD, NULL);
@@ -322,13 +376,22 @@ void fsm_task (void*arg)
 			xSemaphoreTake(deviceControl.checkTafoInProgress_semphr, 1000 / portTICK_PERIOD_MS);
 
 			if (appAdcStatus() == ENABLE) appAdcDisable();
-			app_WiFiConnect();
+
+			// Reconnect to WiFi
+			deviceControl.wifi_state = app_WiFiConnect();
+			if (deviceControl.wifi_state != WIFI_CONNECTED) {
+				appLcdSend(FAILED_REPORT_LCD, NULL);
+				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				deviceControl.test_state = BLOCK_DEVICE;
+				break;
+			}
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
 			appLcdSend(WAITING, NULL);
 			deviceControl.test_state = WAIT_TEST;
 			break;
 		default:
-			vTaskDelay(500 / portTICK_PERIOD_MS);
+			appLcdSend(BLOCK_DEVICE_LCD, NULL);
+			vTaskDelay(3000 / portTICK_PERIOD_MS);
 			break;
 		}
 		vTaskDelay(50 / portTICK_PERIOD_MS);

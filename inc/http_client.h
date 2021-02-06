@@ -14,7 +14,8 @@ extern "C" {
 #endif
 
 /**
- * @brief Send a lcd_msg_id_t to the LCD
+ * @brief Send a GET command requesting the configuration data
+ *        to the web server
  *
  * @param buffer Pointer to a receive buffer
  * @param buffSize Buffer size
@@ -26,6 +27,18 @@ extern "C" {
  */
 esp_err_t get_http_config(char *buffer, uint32_t buffSize);
 
+/**
+ * @brief Send a POST command with the test results to
+ *        the web server
+ *
+ * @param buffer Pointer to a receive buffer
+ *
+ * @return
+ *  - ESP_OK on successful
+ *  - ESP_FAIL on error
+ *
+ */
+esp_err_t post_http_results(char *buffer);
 
 #ifdef __cplusplus
 }

@@ -23,6 +23,7 @@ typedef enum {
     WELCOME,                    /*!<Welcome LCD message                                */
 	WIFI_CONNECTING,            /*!<WiFi connection in progress LCD message            */
 	WIFI_NO_SSID_AND_PASS,      /*!<Failing at trying to connect into WiFi LCD message */
+	USE_WIFI_CONFIG,            /*!<Ask for using WiFi configuration LCD message       */
 	WIFI_SMARTCONFIG,           /*!<Ask for Smart Config WiFi app LCD message          */
 	WIFI_SMARTCONFIG_FAIL,      /*!<Failing at trying to configure WiFi by Smart Config app LCD message  */
 	WIFI_SUCCESSFULLY_CONNECTED,/*!<WiFi connection successfully LCD message           */
@@ -34,7 +35,9 @@ typedef enum {
 	MEASURING_PRIMARY,          /*!<Measuring Primary Coil LCD message                 */
 	MEASURING_SECONDARY,        /*!<Measuring Secondary Coil LCD message               */
 	REPORT_LCD,                 /*!<Reporting LCD message                              */
-	CANCEL_LCD                  /*!<Cancling LCD message                               */
+	FAILED_REPORT_LCD,          /*!<Failed at reporting LCD message                    */
+	CANCEL_LCD,                 /*!<Canceling LCD message                              */
+	BLOCK_DEVICE_LCD            /*!<Block device LCD message                           */
 } lcd_msg_id_t;
 
 /**
