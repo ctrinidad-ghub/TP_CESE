@@ -27,7 +27,10 @@ typedef enum {
  * 
  */
 typedef enum {
-	PRINT_OK
+	PRINTER_NO_COMM, // Printer never respond
+	PRINTER_NOT_READY,
+	PRINTER_READY,
+	PRINTER_OK
 } printerStatus_t;
 
 /**
@@ -42,7 +45,7 @@ void appPrinter( void );
  * @param printer_msg 
  * @return printerStatus_t 
  */
-printerStatus_t print(printer_msg_t printer_msg);
+printerStatus_t print(printer_msg_t printer_msg, const char* lote);
 
 #ifdef __cplusplus
 }

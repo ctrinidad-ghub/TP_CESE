@@ -145,9 +145,15 @@ typedef struct {
 
 //	CANCEL_LCD
 #define CANCEL_LCD_1  "+------------------+\0"
-#define CANCEL_LCD_2  "|   Cancelando     |\0"
-#define CANCEL_LCD_3  "|    espere..      |\0"
+#define CANCEL_LCD_2  "|    Cancelando    |\0"
+#define CANCEL_LCD_3  "|     espere..     |\0"
 #define CANCEL_LCD_4  "+------------------+\0"
+
+//  FAILED_PRINTER_COM
+#define FAILED_PRINTER_COM_1  "+------------------+\0"
+#define FAILED_PRINTER_COM_2  "|   Fallo de COM   |\0"
+#define FAILED_PRINTER_COM_3  "|   con impresora  |\0"
+#define FAILED_PRINTER_COM_4  "+------------------+\0"
 
 const lcd_msg lcd_text [] = {
 	{WELCOME_1, WELCOME_2, WELCOME_3, WELCOME_4},
@@ -169,7 +175,8 @@ const lcd_msg lcd_text [] = {
 	{FAILED_REPORT_LCD_1, FAILED_REPORT_LCD_2, FAILED_REPORT_LCD_3, FAILED_REPORT_LCD_4},
 	{CANCEL_LCD_1, CANCEL_LCD_2, CANCEL_LCD_3, CANCEL_LCD_4},
 	{BLOCK_DEVICE_1, BLOCK_DEVICE_2, BLOCK_DEVICE_3, BLOCK_DEVICE_4},
-	{BLOCK_DEVICE_WEB_SERVER_LCD_1, BLOCK_DEVICE_WEB_SERVER_LCD_2, BLOCK_DEVICE_WEB_SERVER_LCD_3, BLOCK_DEVICE_WEB_SERVER_LCD_4}
+	{BLOCK_DEVICE_WEB_SERVER_LCD_1, BLOCK_DEVICE_WEB_SERVER_LCD_2, BLOCK_DEVICE_WEB_SERVER_LCD_3, BLOCK_DEVICE_WEB_SERVER_LCD_4},
+	{FAILED_PRINTER_COM_1, FAILED_PRINTER_COM_2, FAILED_PRINTER_COM_3, FAILED_PRINTER_COM_4}
 };
 
 typedef struct {

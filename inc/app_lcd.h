@@ -39,7 +39,8 @@ typedef enum {
 	FAILED_REPORT_LCD,          /*!<Failed at reporting LCD message                    */
 	CANCEL_LCD,                 /*!<Canceling LCD message                              */
 	BLOCK_DEVICE_LCD,           /*!<No WiFi connection - Block device LCD message      */
-	BLOCK_DEVICE_WEB_SERVER_LCD /*!<Web Server no available - Block device LCD message */
+	BLOCK_DEVICE_WEB_SERVER_LCD,/*!<Web Server no available - Block device LCD message */
+	FAILED_PRINTER_COM          /*!<Failed printer RS232 printer comm LCD message      */
 } lcd_msg_id_t;
 
 /**

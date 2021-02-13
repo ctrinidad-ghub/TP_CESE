@@ -84,11 +84,23 @@ bool isConfigurated(void)
 {
 	return deviceControl.configurated;
 }
+
+void cleanConfiguration(void){
+	deviceControl.configData.id = 0;
+	for(int i=0; i<LOTE_LENGTH; i++) deviceControl.configData.lote[i]=0;
+	deviceControl.configData.test_num = 0;
+	deviceControl.configData.vp = 0;
+	deviceControl.configData.iv = 0;
+	deviceControl.configurated = 0;
+}
+
 bool configurate(void)
 {
 	esp_err_t err;
 
 	for(int i=0; i<sizeof(buffHttp);i++) buffHttp[i] = 0;
+
+	cleanConfiguration();
 
 	err = get_http_config(buffHttp, MAX_HTTP_RECV_BUFFER);
 
@@ -147,6 +159,7 @@ void fsm_task (void*arg)
 	deviceControl.configurated = 0;
 	deviceControl.printer_msg = TEST_FAIL;
 	deviceControl.fsm_timer = 0;
+	cleanConfiguration();
 
 	BaseType_t res = xTaskCreate(checkTafo_task, "checkTafo_task", 1024 * 2, NULL, 5, NULL);
 	if (res != pdPASS)
@@ -361,7 +374,11 @@ void fsm_task (void*arg)
 			}
 
 			// Send data to the printer
-			print(deviceControl.printer_msg);
+			printerStatus_t printerStatus = print(deviceControl.printer_msg, deviceControl.configData.lote);
+			if (printerStatus == PRINTER_NO_COMM) {
+				appLcdSend(FAILED_PRINTER_COM, NULL);
+				vTaskDelay(3000 / portTICK_PERIOD_MS);
+			}
 
 			appLcdSend(WAITING, NULL);
 			deviceControl.test_state = WAIT_TEST;

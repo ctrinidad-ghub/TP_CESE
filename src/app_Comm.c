@@ -15,7 +15,7 @@
 /*=====[Definition of private macros, constants or data types]===============*/
 
 #define ID			"id_Dispositivo\":"
-#define LOTE 		"lote_partida\":"
+#define LOTE 		"lote_partida\":\""
 #define TEST_NUM 	"test_Numero\":"
 #define VP 			"tension_linea\":"
 #define IV 			"corriente_vacio\":"
@@ -28,13 +28,9 @@
 
 /*=====[Definitions of internal functions]===================================*/
 
-int32_t parseRx(char *rx, char *data, uint8_t data_lenght, char *eod)
+void parseRxString(char *rx, char *data, uint8_t data_lenght, char *eod, char *str)
 {
 	char *ptr, *ptr2;
-	char str[20];
-	int32_t idata;
-
-	for (int i=0;i<sizeof(str);i++) str[i]=0;
 
 	ptr = strstr(rx, data) + data_lenght-1;
 
@@ -42,6 +38,20 @@ int32_t parseRx(char *rx, char *data, uint8_t data_lenght, char *eod)
 	{
 		ptr2 = strstr(ptr, eod); // eod: end of data character
 		strncpy(str, ptr, ptr2-ptr);
+	}
+}
+
+int32_t parseRxInteger(char *rx, char *data, uint8_t data_lenght, char *eod)
+{
+	char str[20];
+	int32_t idata;
+
+	for (int i=0;i<sizeof(str);i++) str[i]=0;
+
+	parseRxString(rx, data, data_lenght, eod, str);
+
+	if (str != NULL) /* Substring found */
+	{
 		idata=atoi(str);
 	}
 	else /* Substring not found */
@@ -55,10 +65,11 @@ int32_t parseRx(char *rx, char *data, uint8_t data_lenght, char *eod)
 
 void processRxData(char* rx_buff, configData_t *configData)
 {
-	configData->id=parseRx(rx_buff, ID, sizeof(ID), ",");
-	configData->test_num=parseRx(rx_buff, TEST_NUM, sizeof(TEST_NUM), ",");
-	configData->vp=parseRx(rx_buff, VP, sizeof(VP), ",");
-	configData->iv=parseRx(rx_buff, IV, sizeof(IV), "}\r\n");
+	configData->id=parseRxInteger(rx_buff, ID, sizeof(ID), ",");
+	parseRxString(rx_buff, LOTE, sizeof(LOTE), "\",",configData->lote);
+	configData->test_num=parseRxInteger(rx_buff, TEST_NUM, sizeof(TEST_NUM), ",");
+	configData->vp=parseRxInteger(rx_buff, VP, sizeof(VP), ",");
+	configData->iv=parseRxInteger(rx_buff, IV, sizeof(IV), "}\r\n");
 }
 
 void processTxData(char* tx_buff, configData_t *configData)
@@ -70,7 +81,7 @@ void processTxData(char* tx_buff, configData_t *configData)
 	sprintf(aux, "%d", (configData->id+1));
 	strcat(tx_buff, aux);
 	strcat(tx_buff, "&lote_partida=");
-	strcat(tx_buff, "2033657-1");
+	strcat(tx_buff, configData->lote);
 	strcat(tx_buff, "&test_Numero=");
 	sprintf(aux, "%d", configData->test_num);
 	strcat(tx_buff, aux);
