@@ -31,10 +31,10 @@
 #define ATTEN ADC_ATTEN_DB_11
 
 #define ZER0        1300 // mV
-#define GAIN_230V    300
-#define GAIN_30V     100
-#define GAIN_800mA   100 // Primary current
-#define GAIN_1500mA  100 // Secondary current
+#define GAIN_230V    330
+#define GAIN_30V      23
+#define GAIN_800mA    80 // Primary current
+#define GAIN_1500mA   54 // Secondary current
 
 // 1st order filter: y[n] = B0 * x[n] + A1 * y[n-1]
 #define TAO_US 	500

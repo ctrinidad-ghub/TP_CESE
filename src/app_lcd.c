@@ -11,6 +11,7 @@
 #include "../inc/app_adc.h"
 #include "../inc/sapi_lcd.h"
 #include "../inc/app_lcd.h"
+#include "../inc/app_Comm.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 #define LCD_WIDTH				20
@@ -77,11 +78,11 @@ typedef struct {
 #define WIFI_SUCCESSFULLY_CONNECTED_3  "|       WiFi       |\0"
 #define WIFI_SUCCESSFULLY_CONNECTED_4  "+------------------+\0"
 
-//	WAITING
-#define WAITING_1  "+------------------+\0"
-#define WAITING_2  "|   Esperando...   |\0"
-#define WAITING_3  "|  Test o Config   |\0"
-#define WAITING_4  "+------------------+\0"
+//	WAITING_TEST
+#define WAITING_TEST_1  "LOTE:               \0"
+#define WAITING_TEST_2  "VsHi=     Lo=      V\0"
+#define WAITING_TEST_3  "IpHi=     Lo=     mA\0"
+#define WAITING_TEST_4  "IsHi=     Lo=     mA\0"
 
 //	WAIT_CONFIG
 #define WAIT_CONFIG_1  "+------------------+\0"
@@ -163,7 +164,7 @@ const lcd_msg lcd_text [] = {
 	{WIFI_SMARTCONFIG_1, WIFI_SMARTCONFIG_2, WIFI_SMARTCONFIG_3, WIFI_SMARTCONFIG_4},
 	{WIFI_SMARTCONFIG_FAIL_1, WIFI_SMARTCONFIG_FAIL_2, WIFI_SMARTCONFIG_FAIL_3, WIFI_SMARTCONFIG_FAIL_4},
 	{WIFI_SUCCESSFULLY_CONNECTED_1, WIFI_SUCCESSFULLY_CONNECTED_2, WIFI_SUCCESSFULLY_CONNECTED_3, WIFI_SUCCESSFULLY_CONNECTED_4},
-	{WAITING_1, WAITING_2, WAITING_3, WAITING_4},
+	{WAITING_TEST_1, WAITING_TEST_2, WAITING_TEST_3, WAITING_TEST_4},
 	{WAIT_CONFIG_1, WAIT_CONFIG_2, WAIT_CONFIG_3, WAIT_CONFIG_4},
 	{CONFIGURATING_LCD_1, CONFIGURATING_LCD_2, CONFIGURATING_LCD_3, CONFIGURATING_LCD_4},
 	{NOT_CONFIGURED_1, NOT_CONFIGURED_2, NOT_CONFIGURED_3, NOT_CONFIGURED_4},
@@ -182,6 +183,7 @@ const lcd_msg lcd_text [] = {
 typedef struct {
 	lcd_msg_id_t lcd_msg_id;
 	rms_t rms;
+	configData_t *configData;
 } lcd_msg_t;
 
 /*=====[Definitions of extern global variables]==============================*/
@@ -219,6 +221,22 @@ void appLcd_task(void *arg)
 		lcdSendString(lcd_text[lcd_msg.lcd_msg_id].msg_4);
 
 		switch(lcd_msg.lcd_msg_id) {
+		case WAITING_TEST:
+			lcdGoToXY(6,0);
+			lcdSendString( (const char*) lcd_msg.configData->lote );
+			lcdGoToXY(5,1);
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vs.max, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
+			lcdGoToXY(13,1);
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vs.min, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
+			lcdGoToXY(5,2);
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Ip.max, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
+			lcdGoToXY(13,2);
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Ip.min, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
+			lcdGoToXY(5,3);
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Is.max, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
+			lcdGoToXY(13,3);
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Is.min, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
+			break;
 		case MEASURING_PRIMARY:
 			// Primary Voltage
 			lcdGoToXY(4,2);
@@ -249,16 +267,27 @@ void appLcd_task(void *arg)
 
 /*=====[Definitions of external functions]===================================*/
 
-void appLcdSend(lcd_msg_id_t lcd_msg_id, rms_t *rms) {
+void appLcdSend(lcd_msg_id_t lcd_msg_id, void *param) {
 	lcd_msg_t lcd_msg;
+	rms_t *rms;
 
 	lcd_msg.lcd_msg_id = lcd_msg_id;
 
-	if(rms != NULL) {
+	switch(lcd_msg.lcd_msg_id) {
+	case WAITING_TEST:
+		lcd_msg.configData = (configData_t *) param;
+		break;
+	case MEASURING_PRIMARY:
+	case MEASURING_SECONDARY:
+		rms = (rms_t *) param;
+
 		lcd_msg.rms.Vp = rms->Vp;
 		lcd_msg.rms.Ip = rms->Ip;
 		lcd_msg.rms.Vs = rms->Vs;
 		lcd_msg.rms.Is = rms->Is;
+		break;
+	default:
+		break;
 	}
 
 	xQueueSend( lcd_queue, ( void * ) &lcd_msg, ( TickType_t ) 0 );

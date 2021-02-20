@@ -17,8 +17,14 @@
 #define ID			"id_Dispositivo\":"
 #define LOTE 		"lote_partida\":\""
 #define TEST_NUM 	"test_Numero\":"
-#define VP 			"tension_linea\":"
-#define IV 			"corriente_vacio\":"
+#define VP_MAX		"tension_primario_max\":"
+#define VP_MIN		"tension_primario_min\":"
+#define IP_MAX		"corriente_primario_max\":"
+#define IP_MIN		"corriente_primario_min\":"
+#define VS_MAX		"tension_secundario_max\":"
+#define VS_MIN		"tension_secundario_min\":"
+#define IS_MAX		"corriente_secundario_max\":"
+#define IS_MIN		"corriente_secundario_min\":"
 
 /*=====[Definitions of extern global variables]==============================*/
 
@@ -68,8 +74,14 @@ void processRxData(char* rx_buff, configData_t *configData)
 	configData->id=parseRxInteger(rx_buff, ID, sizeof(ID), ",");
 	parseRxString(rx_buff, LOTE, sizeof(LOTE), "\",",configData->lote);
 	configData->test_num=parseRxInteger(rx_buff, TEST_NUM, sizeof(TEST_NUM), ",");
-	configData->vp=parseRxInteger(rx_buff, VP, sizeof(VP), ",");
-	configData->iv=parseRxInteger(rx_buff, IV, sizeof(IV), "}\r\n");
+	configData->trafoParameters.Vp.max=parseRxInteger(rx_buff, VP_MAX, sizeof(VP_MAX), ",");
+	configData->trafoParameters.Vp.min=parseRxInteger(rx_buff, VP_MIN, sizeof(VP_MIN), ",");
+	configData->trafoParameters.Ip.max=parseRxInteger(rx_buff, IP_MAX, sizeof(IP_MAX), ",");
+	configData->trafoParameters.Ip.min=parseRxInteger(rx_buff, IP_MIN, sizeof(IP_MIN), ",");
+	configData->trafoParameters.Vs.max=parseRxInteger(rx_buff, VS_MAX, sizeof(VS_MAX), ",")*10;
+	configData->trafoParameters.Vs.min=parseRxInteger(rx_buff, VS_MIN, sizeof(VS_MIN), ",")*10;
+	configData->trafoParameters.Is.max=parseRxInteger(rx_buff, IS_MAX, sizeof(IS_MAX), ",");
+	configData->trafoParameters.Is.min=parseRxInteger(rx_buff, IS_MIN, sizeof(IS_MIN), "}\r\n");
 }
 
 void processTxData(char* tx_buff, configData_t *configData)
@@ -85,10 +97,11 @@ void processTxData(char* tx_buff, configData_t *configData)
 	strcat(tx_buff, "&test_Numero=");
 	sprintf(aux, "%d", configData->test_num);
 	strcat(tx_buff, aux);
-	strcat(tx_buff, "&tension_linea=");
-	sprintf(aux, "%d", (configData->vp+1));
+	strcat(tx_buff, "&tension_primario_max=");
+	sprintf(aux, "%d", (configData->trafoParameters.Vp.max+1));
 	strcat(tx_buff, aux);
-	strcat(tx_buff, "&corriente_vacio=");
-	sprintf(aux, "%d", configData->iv);
+	strcat(tx_buff, "&tension_primario_min=");
+	sprintf(aux, "%d", configData->trafoParameters.Vp.min);
 	strcat(tx_buff, aux);
+	strcat(tx_buff, "&corriente_primario_max=800&corriente_primario_min=400&tension_secundario_max=25&tension_secundario_min=20&corriente_secundario_max=200&corriente_secundario_min=150");
 }

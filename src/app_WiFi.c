@@ -208,6 +208,7 @@ wifi_state_t app_WiFiDisconnect(void)
 {
 	ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler));
 	ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler));
+    ESP_ERROR_CHECK(esp_event_handler_unregister(SC_EVENT, ESP_EVENT_ANY_ID, &event_handler));
 	esp_wifi_disconnect();
 	esp_wifi_stop();
     esp_wifi_deinit();

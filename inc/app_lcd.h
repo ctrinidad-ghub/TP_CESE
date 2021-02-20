@@ -27,7 +27,7 @@ typedef enum {
 	WIFI_SMARTCONFIG,           /*!<Ask for Smart Config WiFi app LCD message          */
 	WIFI_SMARTCONFIG_FAIL,      /*!<Failing at trying to configure WiFi by Smart Config app LCD message  */
 	WIFI_SUCCESSFULLY_CONNECTED,/*!<WiFi connection successfully LCD message           */
-	WAITING,                    /*!<Waiting for Test or Config LCD message             */
+	WAITING_TEST,               /*!<Waiting for Test or Config LCD message             */
 	WAIT_CONFIG,                /*!<Waiting for Configuration LCD message              */
 	CONFIGURATING_LCD,          /*!<Configuration device LCD message                   */
 	NOT_CONFIGURED,             /*!<Device is not configured LCD message               */
@@ -58,7 +58,7 @@ void appLcdInit(void);
  * @note The rms pointer is optional and depends on the lcd_msg_id to send
  * 
  */
-void appLcdSend(lcd_msg_id_t lcd_msg_id, rms_t *rms);
+void appLcdSend(lcd_msg_id_t lcd_msg_id, void *param);
 
 #ifdef __cplusplus
 }

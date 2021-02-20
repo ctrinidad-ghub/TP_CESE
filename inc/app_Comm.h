@@ -15,6 +15,18 @@ extern "C" {
 
 #define LOTE_LENGTH 20
 
+typedef struct {
+	int32_t max;
+	int32_t min;
+} parametersRange_t;
+
+typedef struct {
+	parametersRange_t Vp;
+	parametersRange_t Vs;
+	parametersRange_t Ip;
+	parametersRange_t Is;
+} trafoParameters_t;
+
 /**
  * @brief Configuration data type
  *
@@ -23,8 +35,7 @@ typedef struct {
 	uint32_t id;
 	char lote[LOTE_LENGTH];
 	uint32_t test_num;
-	int32_t vp;
-	int32_t iv;
+	trafoParameters_t trafoParameters;
 } configData_t;
 
 /**

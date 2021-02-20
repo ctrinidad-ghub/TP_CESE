@@ -44,22 +44,9 @@ typedef enum {
 } test_state_t;
 
 typedef struct {
-	int32_t max;
-	int32_t min;
-} parametersRange_t;
-
-typedef struct {
-	parametersRange_t Vp;
-	parametersRange_t Vs;
-	parametersRange_t Ip;
-	parametersRange_t Is;
-} trafoParameters_t;
-
-typedef struct {
 	test_state_t test_state;
 	bool configurated;
 	printer_msg_t printer_msg;
-	trafoParameters_t trafoParameters;
 	uint8_t fsm_timer;
 	configData_t configData;
 	SemaphoreHandle_t checkTafo_semphr;
@@ -89,8 +76,14 @@ void cleanConfiguration(void){
 	deviceControl.configData.id = 0;
 	for(int i=0; i<LOTE_LENGTH; i++) deviceControl.configData.lote[i]=0;
 	deviceControl.configData.test_num = 0;
-	deviceControl.configData.vp = 0;
-	deviceControl.configData.iv = 0;
+	deviceControl.configData.trafoParameters.Vp.max = 0;
+	deviceControl.configData.trafoParameters.Vp.min = 0;
+	deviceControl.configData.trafoParameters.Ip.max = 0;
+	deviceControl.configData.trafoParameters.Ip.min = 0;
+	deviceControl.configData.trafoParameters.Vs.max = 0;
+	deviceControl.configData.trafoParameters.Vs.min = 0;
+	deviceControl.configData.trafoParameters.Is.max = 0;
+	deviceControl.configData.trafoParameters.Is.min = 0;
 	deviceControl.configurated = 0;
 }
 
@@ -267,7 +260,7 @@ void fsm_task (void*arg)
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
 				appLcdSend(CONFIGURATION_OK, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
-			    appLcdSend(WAITING, NULL);
+			    appLcdSend(WAITING_TEST, &deviceControl.configData);
 			}
 			else {
 				appLcdSend(CONFIGURATION_FAIL, NULL);
@@ -380,7 +373,7 @@ void fsm_task (void*arg)
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
 			}
 
-			appLcdSend(WAITING, NULL);
+			appLcdSend(WAITING_TEST, &deviceControl.configData);
 			deviceControl.test_state = WAIT_TEST;
 			break;
 		case CANCEL_FSM:
@@ -403,7 +396,7 @@ void fsm_task (void*arg)
 				break;
 			}
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			appLcdSend(WAITING, NULL);
+			appLcdSend(WAITING_TEST, &deviceControl.configData);
 			deviceControl.test_state = WAIT_TEST;
 			break;
 		default:
