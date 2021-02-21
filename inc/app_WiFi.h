@@ -28,19 +28,19 @@ typedef enum {
  * @brief Initialize the WiFi feature
  * 
  */
-int app_WiFiInit(void);
+int app_WiFiInit(wifi_state_t *wifi_state);
 
 /**
  * @brief Connect to WiFi
  * 
  */
-wifi_state_t app_WiFiConnect(void);
+void app_WiFiConnect(wifi_state_t *wifi_state);
 
 /**
  * @brief Disconnect from WiFi
  * 
  */
-wifi_state_t app_WiFiDisconnect(void);
+void app_WiFiDisconnect(wifi_state_t *wifi_state);
 
 #ifdef __cplusplus
 }

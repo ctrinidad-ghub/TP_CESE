@@ -43,7 +43,7 @@ void appAdcEnable()
         .mode = I2S_MODE_MASTER | I2S_MODE_RX | I2S_MODE_ADC_BUILT_IN,
         .sample_rate =  I2S_SAMPLE_RATE,
         .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
-	    .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_I2S | I2S_COMM_FORMAT_I2S_MSB),
+	    .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_STAND_I2S),
 	    .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
 	    .intr_alloc_flags = 0,
 	    .dma_buf_count = 2, // Debe ser > 1

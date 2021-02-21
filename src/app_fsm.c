@@ -178,7 +178,7 @@ void fsm_task (void*arg)
 		case WIFI_CONNECTION:
 			appLcdSend(WIFI_CONNECTING, NULL);
 			vTaskDelay(3000 / portTICK_PERIOD_MS);
-			err = app_WiFiInit();
+			err = app_WiFiInit(&deviceControl.wifi_state);
 			if (err != ESP_OK) {
 				appLcdSend(WIFI_NO_SSID_AND_PASS, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
@@ -186,7 +186,7 @@ void fsm_task (void*arg)
 				break;
 			}
 			else {
-				deviceControl.wifi_state = app_WiFiConnect();
+				app_WiFiConnect(&deviceControl.wifi_state);
 				if (deviceControl.wifi_state != WIFI_CONNECTED) {
 					appLcdSend(WIFI_NO_SSID_AND_PASS, NULL);
 					vTaskDelay(3000 / portTICK_PERIOD_MS);
@@ -208,7 +208,7 @@ void fsm_task (void*arg)
 				countWiFiAttempt = 0;
 				while (deviceControl.wifi_state != WIFI_CONNECTED) {
 					appLcdSend(WIFI_SMARTCONFIG, NULL);
-					deviceControl.wifi_state = app_WiFiConnect();
+					app_WiFiConnect(&deviceControl.wifi_state);
 					if (deviceControl.wifi_state != WIFI_CONNECTED) {
 						appLcdSend(WIFI_SMARTCONFIG_FAIL, NULL);
 						vTaskDelay(3000 / portTICK_PERIOD_MS);
@@ -239,7 +239,7 @@ void fsm_task (void*arg)
 			if ( isTestPressed( ) ) {
 				if ( isConfigurated() ) {
 					deviceControl.test_state = POWER_UP_PRIMARY;
-					deviceControl.wifi_state = app_WiFiDisconnect();
+					app_WiFiDisconnect(&deviceControl.wifi_state);
 					vTaskDelay(500 / portTICK_PERIOD_MS);
 					appAdcEnable();
 					connectPrimary();
@@ -346,7 +346,7 @@ void fsm_task (void*arg)
 			vTaskDelay(300 / portTICK_PERIOD_MS);
 
 			// Reconnect to WiFi
-			deviceControl.wifi_state = app_WiFiConnect();
+			app_WiFiConnect(&deviceControl.wifi_state);
 			if (deviceControl.wifi_state != WIFI_CONNECTED) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
@@ -387,7 +387,7 @@ void fsm_task (void*arg)
 			if (appAdcStatus() == ENABLE) appAdcDisable();
 
 			// Reconnect to WiFi
-			deviceControl.wifi_state = app_WiFiConnect();
+			app_WiFiConnect(&deviceControl.wifi_state);
 			if (deviceControl.wifi_state != WIFI_CONNECTED) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
