@@ -225,9 +225,9 @@ void appLcd_task(void *arg)
 			lcdGoToXY(6,0);
 			lcdSendString( (const char*) lcd_msg.configData->lote );
 			lcdGoToXY(5,1);
-			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vs.max, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vs.max/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
 			lcdGoToXY(13,1);
-			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vs.min, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vs.min/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
 			lcdGoToXY(5,2);
 			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Ip.max, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
 			lcdGoToXY(13,2);

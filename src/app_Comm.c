@@ -78,8 +78,8 @@ void processRxData(char* rx_buff, configData_t *configData)
 	configData->trafoParameters.Vp.min=parseRxInteger(rx_buff, VP_MIN, sizeof(VP_MIN), ",");
 	configData->trafoParameters.Ip.max=parseRxInteger(rx_buff, IP_MAX, sizeof(IP_MAX), ",");
 	configData->trafoParameters.Ip.min=parseRxInteger(rx_buff, IP_MIN, sizeof(IP_MIN), ",");
-	configData->trafoParameters.Vs.max=parseRxInteger(rx_buff, VS_MAX, sizeof(VS_MAX), ",")*10;
-	configData->trafoParameters.Vs.min=parseRxInteger(rx_buff, VS_MIN, sizeof(VS_MIN), ",")*10;
+	configData->trafoParameters.Vs.max=parseRxInteger(rx_buff, VS_MAX, sizeof(VS_MAX), ",")*100;
+	configData->trafoParameters.Vs.min=parseRxInteger(rx_buff, VS_MIN, sizeof(VS_MIN), ",")*100;
 	configData->trafoParameters.Is.max=parseRxInteger(rx_buff, IS_MAX, sizeof(IS_MAX), ",");
 	configData->trafoParameters.Is.min=parseRxInteger(rx_buff, IS_MIN, sizeof(IS_MIN), "}\r\n");
 }

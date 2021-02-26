@@ -9,18 +9,11 @@
 #ifndef _APP_PRINTER_H_
 #define _APP_PRINTER_H_
 
+#include "../inc/test_status.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * @brief Message to print, used in print function
- * 
- */
-typedef enum {
-	TEST_PASS,
-	TEST_FAIL,
-} printer_msg_t;
 
 /**
  * @brief Printer status
@@ -40,12 +33,13 @@ typedef enum {
 void appPrinter( void );
 
 /**
- * @brief Send printer_msg to the printer
+ * @brief Send printer msg to the printer
  * 
- * @param printer_msg 
+ * @param test_status
+ * @param lote
  * @return printerStatus_t 
  */
-printerStatus_t print(printer_msg_t printer_msg, const char* lote);
+printerStatus_t print(test_status_t *test_status, const char* lote);
 
 #ifdef __cplusplus
 }
