@@ -21,7 +21,7 @@
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
-#define ADC_ITERATION 			6
+#define ADC_ITERATION 			10
 #define MAX_HTTP_RECV_BUFFER 	2048
 
 typedef enum {
@@ -136,6 +136,7 @@ void checkTafo_task (void*arg)
 			else if (deviceControl.test_fsm_state == MEASURE_PRIMARY) {
 				deviceControl.test_status.rms.Ip = rms.Ip;
 				deviceControl.test_status.rms.Vs = rms.Vs;
+				deviceControl.test_status.Vl = rms.Vp;
 				if (rms.Ip > deviceControl.configData.trafoParameters.Ip.max ||
 					rms.Ip < deviceControl.configData.trafoParameters.Ip.min) {
 					deviceControl.test_status.test_result |= IP_FAILED;
@@ -238,8 +239,11 @@ void fsm_task (void*arg)
 				}
 			}
 
-			appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			// Only print this information in detailed mode
+			if (deviceControl.test_mode == DETAILED_TEST_MODE) {
+				appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
+				vTaskDelay(3000 / portTICK_PERIOD_MS);
+			}
 
 			appLcdSend(WAIT_CONFIG, NULL);
 			deviceControl.test_fsm_state = WAIT_TEST;
@@ -301,9 +305,7 @@ void fsm_task (void*arg)
 			break;
 		case CONFIGURATING:
 			if( configurate() ){
-				vTaskDelay(3000 / portTICK_PERIOD_MS);
-				appLcdSend(CONFIGURATION_OK, NULL);
-				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				vTaskDelay(2000 / portTICK_PERIOD_MS);
 			    appLcdSend(WAITING_TEST, &deviceControl.configData);
 			}
 			else {
@@ -381,11 +383,13 @@ void fsm_task (void*arg)
 			}
 			break;
 		case POWER_DOWN_SECONDARY:
+			if (deviceControl.fsm_timer == 4) {
+				deviceControl.test_fsm_state = REPORT;
+			} else deviceControl.fsm_timer++;
 			disconnectPrimarySecondary();
-			deviceControl.test_fsm_state = REPORT;
 			break;
 		case REPORT:
-			appLcdSend(REPORT_LCD, NULL);
+			appLcdSend(REPORT_LCD, &deviceControl.test_status);
 			appAdcDisable();
 			vTaskDelay(300 / portTICK_PERIOD_MS);
 

@@ -55,7 +55,7 @@ void appAdcEnable()
 	 i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL);
 
 	 //init ADC pad
-	 i2s_set_adc_mode(ADC_UNIT_1, adc[0].channel);
+	 i2s_set_adc_mode(ADC_UNIT_1, adc[VP_INDEX].channel);
 
 	 adc_status.status = ENABLE;
 }
@@ -108,7 +108,6 @@ void adc_dma_task(void*arg)
 					I2SReadBuff[i+SAMPLES_IN_20MS*j] = esp_adc_cal_raw_to_voltage(I2SReadBuff[i+SAMPLES_IN_20MS*j] & 0x0FFF, adc_chars);
 					int16_t voltage = I2SReadBuff[i+SAMPLES_IN_20MS*j];
 					voltage -= ZER0;
-					voltage = voltage * 100 / adc[adcIndex].gain;
 					adc[adcIndex].voltageFilter = (B0 * voltage + A1 * adc[adcIndex].voltageFilter)/1000;
 					adc[adcIndex].sum_voltage += adc[adcIndex].voltageFilter * adc[adcIndex].voltageFilter;
 				}
@@ -119,6 +118,7 @@ void adc_dma_task(void*arg)
 			}
 
 			*adc[adcIndex].rms /= (AMOUNT_OF_CYLCES-1);
+			*adc[adcIndex].rms = (*adc[adcIndex].rms * adc[adcIndex].gain)/100 + adc[adcIndex].offset;
 
 			adc[adcIndex].sum_voltage = 0;
 			if (adcIndex == ADC_CHANNELS-1) {
@@ -148,18 +148,22 @@ void appAdcInit(void)
 {
 	uint32_t adcIndex = 0;
 
-	adc[0].channel = (adc_channel_t) PV_CH;
-	adc[1].channel = (adc_channel_t) PC_CH;
-	adc[2].channel = (adc_channel_t) SV_CH;
-	adc[3].channel = (adc_channel_t) SC_CH;
-	adc[0].rms = &rms.Vp;
-	adc[1].rms = &rms.Ip;
-	adc[2].rms = &rms.Vs;
-	adc[3].rms = &rms.Is;
-	adc[0].gain = GAIN_230V;
-	adc[1].gain = GAIN_800mA;
-	adc[2].gain = GAIN_30V;
-	adc[3].gain = GAIN_1500mA;
+	adc[VP_INDEX].channel = (adc_channel_t) PV_CH;
+	adc[IP_INDEX].channel = (adc_channel_t) PC_CH;
+	adc[VS_INDEX].channel = (adc_channel_t) SV_CH;
+	adc[IS_INDEX].channel = (adc_channel_t) SC_CH;
+	adc[VP_INDEX].rms = &rms.Vp;
+	adc[IP_INDEX].rms = &rms.Ip;
+	adc[VS_INDEX].rms = &rms.Vs;
+	adc[IS_INDEX].rms = &rms.Is;
+	adc[VP_INDEX].gain = GAIN_230V;
+	adc[IP_INDEX].gain = GAIN_800mA;
+	adc[VS_INDEX].gain = GAIN_30V;
+	adc[IS_INDEX].gain = GAIN_1500mA;
+	adc[VP_INDEX].offset = OFFSET_230V;
+	adc[VS_INDEX].offset = OFFSET_30V;
+	adc[IP_INDEX].offset = OFFSET_800mA;
+	adc[IS_INDEX].offset = OFFSET_1500mA;
 
 	adc1_config_width(ADC_WIDTH_BIT_12);
 

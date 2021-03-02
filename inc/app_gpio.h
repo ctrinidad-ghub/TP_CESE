@@ -22,6 +22,9 @@ extern "C" {
 #define pConf   GPIO_NUM_36
 #define pTest   GPIO_NUM_39
 
+#define buzzer        GPIO_NUM_4
+#define safetySwitch  GPIO_NUM_2
+
 /**
  * @brief Initialize GPIO
  * 

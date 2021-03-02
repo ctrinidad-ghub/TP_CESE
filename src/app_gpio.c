@@ -16,7 +16,7 @@
 /*=====[Definition of private macros, constants or data types]===============*/
 
 // GPIO
-#define GPIO_OUTPUT_PIN_SEL  (1ULL<<CPV | 1ULL<<CSV)
+#define GPIO_OUTPUT_PIN_SEL  (1ULL<<CPV | 1ULL<<CSV | 1ULL<<buzzer)
 #define GPIO_INPUT_PIN_SEL   (1ULL<<pCan | 1ULL<<pConf | 1ULL<<pTest)
 
 /*=====[Definitions of extern global variables]==============================*/
@@ -45,6 +45,7 @@ static void trafoPinInit( void )
 
     gpio_set_level(CPV, 1);
 	gpio_set_level(CSV, 1);
+	gpio_set_level(buzzer, 1);
 
     //configure GPIO with the given settings
     gpio_config(&io_conf);

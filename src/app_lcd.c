@@ -12,6 +12,7 @@
 #include "../inc/sapi_lcd.h"
 #include "../inc/app_lcd.h"
 #include "../inc/app_Comm.h"
+#include "../inc/test_status.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 #define LCD_WIDTH				20
@@ -127,10 +128,10 @@ typedef struct {
 #define MEASURING_SECONDARY_4  "Vs=    V  Is=     mA\0"
 
 //	REPORT_LCD
-#define REPORT_LCD_1  "+------------------+\0"
-#define REPORT_LCD_2  "|    Enviando      |\0"
-#define REPORT_LCD_3  "|     reporte      |\0"
-#define REPORT_LCD_4  "+------------------+\0"
+#define REPORT_LCD_1  "                    \0"
+#define REPORT_LCD_2  "Vs=     V           \0"
+#define REPORT_LCD_3  "Ip=     mA          \0"
+#define REPORT_LCD_4  "Is=     mA          \0"
 
 //  FAILED_REPORT_LCD
 #define FAILED_REPORT_LCD_1  "+------------------+\0"
@@ -184,6 +185,7 @@ typedef struct {
 	lcd_msg_id_t lcd_msg_id;
 	rms_t rms;
 	configData_t *configData;
+	test_status_t *test_status;
 } lcd_msg_t;
 
 /*=====[Definitions of extern global variables]==============================*/
@@ -259,6 +261,40 @@ void appLcd_task(void *arg)
 			lcdGoToXY(14,3);
 			lcdSendIntFixedDigit( lcd_msg.rms.Is, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
 			break;
+		case REPORT_LCD:
+			lcdGoToXY(0,0);
+			if (lcd_msg.test_status->test_result == TEST_PASS) {
+				lcdSendString("      APROBADO      ");
+			}
+			else {
+				lcdSendString("     RECHAZADO      ");
+			}
+
+			// Secondary Voltage
+			lcdGoToXY(4,1);
+			lcdSendIntFixedDigit( lcd_msg.test_status->rms.Vs/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
+			lcdGoToXY(9,1);
+			if ((lcd_msg.test_status->test_result & VS_FAILED) && VS_FAILED)
+				lcdSendString("  **FALLO**");
+			else
+				lcdSendString("     OK    ");
+			// Primary Current
+			lcdGoToXY(4,2);
+			lcdSendIntFixedDigit( lcd_msg.test_status->rms.Ip, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
+			lcdGoToXY(10,2);
+			if ((lcd_msg.test_status->test_result & IP_FAILED) && IP_FAILED)
+				lcdSendString(" **FALLO**");
+			else
+				lcdSendString("    OK    ");
+			// Secondary Current
+			lcdGoToXY(4,3);
+			lcdSendIntFixedDigit( lcd_msg.test_status->rms.Is, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
+			lcdGoToXY(10,3);
+			if ((lcd_msg.test_status->test_result & IS_FAILED) && IS_FAILED)
+				lcdSendString(" **FALLO**");
+			else
+				lcdSendString("    OK    ");
+			break;
 		default:
 			break;
 		}
@@ -285,6 +321,9 @@ void appLcdSend(lcd_msg_id_t lcd_msg_id, void *param) {
 		lcd_msg.rms.Ip = rms->Ip;
 		lcd_msg.rms.Vs = rms->Vs;
 		lcd_msg.rms.Is = rms->Is;
+		break;
+	case REPORT_LCD:
+		lcd_msg.test_status = (test_status_t *) param;
 		break;
 	default:
 		break;

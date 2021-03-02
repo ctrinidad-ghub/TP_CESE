@@ -14,8 +14,8 @@
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
-#define UART_TX  (GPIO_NUM_17)
-#define UART_RX  (GPIO_NUM_16)
+#define UART_TX   (GPIO_NUM_17)
+#define UART_RX   (GPIO_NUM_16)
 #define UART_RTS  (UART_PIN_NO_CHANGE)
 #define UART_CTS  (UART_PIN_NO_CHANGE)
 
@@ -32,18 +32,18 @@ const char END_LABEL[]    = {'E', 0x0D}; 			// Terminate Label Formatting Mode a
 const char ALIGN_CENTER[] = {'J', 'C', 0x0D}; 	    // Justification: Center justified
 const char ALIGN_LEFT[]   = {'J', 'L', 0x0D}; 	    // Justification: Left justified
 
-const char TEST_FAIL_MSG[] = "131100001400077RECHAZADO\r";   // Font3, y=14mm, x=7.7mm
-const char LOTE_MSG_FAIL[] = "121100001100040LOTE: ";        // Font2, y=11mm, x=4mm
-const char IP_MSG_FAIL[]   = "121100000810040IP = 120mA     OK \r"; 	// Font2, y=8.1mm, x=4mm
-const char VS_MSG_FAIL[]   = "121100000510040VS = 16.6V  **FALLO** \r"; // Font2, y=5.1mm, x=4mm
-const char IS_MSG_FAIL[]   = "121100000220040IS = 200mA     OK \r"; 	// Font2, y=2.2mm, x=4mm
-const char VP_MSG_FAIL[]   = "111100000000040VP = 230V \r"; 			// Font1, y=0mm, x=4mm
+const char TEST_FAIL_MSG[] = "131100001400077RECHAZADO\r";   // Font3, y=14mm,  x=7.7mm
+const char LOTE_FAIL_MSG[] = "121100001100040LOTE: ";        // Font2, y=11mm,  x=4mm
+const char VS_FAIL_MSG[]   = "121100000810040VS ";           // Font2, y=8.1mm, x=4mm
+const char IP_FAIL_MSG[]   = "121100000510040IP ";           // Font2, y=5.1mm, x=4mm
+const char IS_FAIL_MSG[]   = "121100000220040IS "; 	         // Font2, y=2.2mm, x=4mm
+const char VL_FAIL_MSG[]   = "111100000000040VL "; 			 // Font1, y=0mm,   x=4mm
 
 const char TEST_PASS_MSG[] = "161100000250030OK\r";    // Font6, y=2.5mm, x=3mm
-const char LOTE_MSG_PASS[] = "131100001300040LOTE: ";  // Font3, y=13mm, x=4mm
-const char VS_MSG_PASS[]   = "171100000800140VS ";     // Font7, y=8mm, x=14mm
-const char IP_MSG_PASS[]   = "171100000400140IP "; 	   // Font7, y=4mm, x=14mm
-const char IS_MSG_PASS[]   = "171100000000140IS "; 	   // Font7, y=0mm, x=14mm
+const char LOTE_PASS_MSG[] = "131100001300040LOTE: ";  // Font3, y=13mm,  x=4mm
+const char VS_PASS_MSG[]   = "171100000800140VS ";     // Font7, y=8mm,   x=14mm
+const char IP_PASS_MSG[]   = "171100000400140IP "; 	   // Font7, y=4mm,   x=14mm
+const char IS_PASS_MSG[]   = "171100000000140IS "; 	   // Font7, y=0mm,   x=14mm
 
 /*=====[Definitions of extern global variables]==============================*/
 
@@ -112,55 +112,95 @@ static printerStatus_t printTestStatus(test_status_t *test_status, const char* l
 	// Test Status
 	if (test_status->test_result == TEST_PASS) {
 		uart_write_bytes(UART_NUM_2, TEST_PASS_MSG, sizeof(TEST_PASS_MSG));
+	}
+	else {
+		uart_write_bytes(UART_NUM_2, TEST_FAIL_MSG, sizeof(TEST_FAIL_MSG));
+	}
+	// Lote
+	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
+	if (test_status->test_result == TEST_PASS) {
+		strcpy((char*) uartBuffer, (char*) LOTE_PASS_MSG);
+	}
+	else {
+		strcpy((char*) uartBuffer, (char*) LOTE_FAIL_MSG);
+	}
+	strcat((char*) uartBuffer, (char*) lote);
+	*(uartBuffer+strlen((char*) uartBuffer))='\r';
+	len = strlen((char*) uartBuffer);
+	uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
 
-		// Lote
-		for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
-		strcpy((char*) uartBuffer, (char*) LOTE_MSG_PASS);
-		strcat((char*) uartBuffer, (char*) lote);
-		*(uartBuffer+strlen((char*) uartBuffer))='\r';
-		len = strlen((char*) uartBuffer);
-		uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
+	// RMS values
+	// VS
+	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
+	if (test_status->test_result == TEST_PASS) {
+		strcpy((char*) uartBuffer, (char*) VS_PASS_MSG);
+	}
+	else {
+		strcpy((char*) uartBuffer, (char*) VS_FAIL_MSG);
+	}
+	sprintf(aux, "%d", test_status->rms.Vs/100);
+	strcat((char*) uartBuffer, (char*) aux);
+	if (test_status->test_result == TEST_PASS) {
+		strcat((char*) uartBuffer, (char*) "V\r");
+	}
+	else {
+		if ((test_status->test_result & VS_FAILED) && VS_FAILED)
+			strcat((char*) uartBuffer, (char*) "V  **FALLO** \r");
+		else
+			strcat((char*) uartBuffer, (char*) "V     OK \r");
+	}
+	len = strlen((char*) uartBuffer);
+	uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
+	// IP
+	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
+	if (test_status->test_result == TEST_PASS) {
+		strcpy((char*) uartBuffer, (char*) IP_PASS_MSG);
+	}
+	else {
+		strcpy((char*) uartBuffer, (char*) IP_FAIL_MSG);
+	}
+	sprintf(aux, "%d", test_status->rms.Ip);
+	strcat((char*) uartBuffer, (char*) aux);
+	if (test_status->test_result == TEST_PASS) {
+		strcat((char*) uartBuffer, (char*) "mA\r");
+	}
+	else {
+		if ((test_status->test_result & IP_FAILED) && IP_FAILED)
+			strcat((char*) uartBuffer, (char*) "mA  **FALLO** \r");
+		else
+			strcat((char*) uartBuffer, (char*) "mA     OK \r");
+	}
+	len = strlen((char*) uartBuffer);
+	uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
+	// IS
+	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
+	if (test_status->test_result == TEST_PASS) {
+		strcpy((char*) uartBuffer, (char*) IS_PASS_MSG);
+	}
+	else {
+		strcpy((char*) uartBuffer, (char*) IS_FAIL_MSG);
+	}
+	sprintf(aux, "%d", test_status->rms.Is);
+	strcat((char*) uartBuffer, (char*) aux);
+	if (test_status->test_result == TEST_PASS) {
+		strcat((char*) uartBuffer, (char*) "mA\r");
+	}
+	else {
+		if ((test_status->test_result & IS_FAILED) && IS_FAILED)
+			strcat((char*) uartBuffer, (char*) "mA  **FALLO** \r");
+		else
+			strcat((char*) uartBuffer, (char*) "mA     OK \r");
+	}
+	len = strlen((char*) uartBuffer);
+	uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
 
-		// RMS values
-		// VS
-		for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
-		strcpy((char*) uartBuffer, (char*) VS_MSG_PASS);
-		sprintf(aux, "%d", test_status->rms.Vs/100);
+	if (test_status->test_result != TEST_PASS) {
+		strcpy((char*) uartBuffer, (char*) VL_FAIL_MSG);
+		sprintf(aux, "%d", test_status->Vl);
 		strcat((char*) uartBuffer, (char*) aux);
 		strcat((char*) uartBuffer, (char*) "V\r");
 		len = strlen((char*) uartBuffer);
 		uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
-		// IP
-		for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
-		strcpy((char*) uartBuffer, (char*) IP_MSG_PASS);
-		sprintf(aux, "%d", test_status->rms.Ip);
-		strcat((char*) uartBuffer, (char*) aux);
-		strcat((char*) uartBuffer, (char*) "mA\r");
-		len = strlen((char*) uartBuffer);
-		uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
-		// IS
-		for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
-		strcpy((char*) uartBuffer, (char*) IS_MSG_PASS);
-		sprintf(aux, "%d", test_status->rms.Is);
-		strcat((char*) uartBuffer, (char*) aux);
-		strcat((char*) uartBuffer, (char*) "mA\r");
-		len = strlen((char*) uartBuffer);
-		uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
-	}
-	else {
-		uart_write_bytes(UART_NUM_2, TEST_FAIL_MSG, sizeof(TEST_FAIL_MSG));
-		// Lote
-		for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
-		strcpy((char*) uartBuffer, (char*) LOTE_MSG_FAIL);
-		strcat((char*) uartBuffer, (char*) lote);
-		*(uartBuffer+strlen((char*) uartBuffer))='\r';
-		len = strlen((char*) uartBuffer);
-		uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
-		// RMS values
-		uart_write_bytes(UART_NUM_2, VP_MSG_FAIL, sizeof(VP_MSG_FAIL));
-		uart_write_bytes(UART_NUM_2, IP_MSG_FAIL, sizeof(IP_MSG_FAIL));
-		uart_write_bytes(UART_NUM_2, VS_MSG_FAIL, sizeof(VS_MSG_FAIL));
-		uart_write_bytes(UART_NUM_2, IS_MSG_FAIL, sizeof(IS_MSG_FAIL));
 	}
 
 	// Terminate Label Formatting Mode and Print Label

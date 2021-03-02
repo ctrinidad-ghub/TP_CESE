@@ -23,18 +23,28 @@
 
 // ADC
 #define DEFAULT_VREF    1100
-#define ADC_CHANNELS 4
-#define SC_CH ADC1_CHANNEL_6
-#define PV_CH ADC1_CHANNEL_7
-#define SV_CH ADC1_CHANNEL_4
-#define PC_CH ADC1_CHANNEL_5
-#define ATTEN ADC_ATTEN_DB_11
+#define ADC_CHANNELS 	4
+#define SC_CH 			ADC1_CHANNEL_6
+#define PV_CH 			ADC1_CHANNEL_7
+#define SV_CH 			ADC1_CHANNEL_4
+#define PC_CH 			ADC1_CHANNEL_5
+#define ATTEN 			ADC_ATTEN_DB_11
 
-#define ZER0        1300 // mV
-#define GAIN_230V    330
-#define GAIN_30V      23
-#define GAIN_800mA    80 // Primary current
-#define GAIN_1500mA   54 // Secondary current
+#define VP_INDEX		0 // Primary Voltage
+#define IP_INDEX		1 // Primary Current
+#define VS_INDEX		2 // Secondary Voltage
+#define IS_INDEX		3 // Secondary Current
+
+#define ZER0         1300 // mV
+#define GAIN_230V      40
+#define GAIN_30V      666
+#define GAIN_800mA    120 // Primary current
+#define GAIN_1500mA   260 // Secondary current
+#define OFFSET_230V   -74
+#define OFFSET_30V   -825
+#define OFFSET_800mA    0 // Primary current
+#define OFFSET_1500mA  -8 // Secondary current
+
 
 // 1st order filter: y[n] = B0 * x[n] + A1 * y[n-1]
 #define TAO_US 	500
@@ -51,6 +61,7 @@ typedef struct {
 	uint32_t sum_voltage;
 	uint32_t *rms;
 	int32_t gain; // x100
+	int32_t offset;
 	int32_t voltageFilter;
 } adc_t;
 /** @endcond */
@@ -68,10 +79,10 @@ typedef enum {
  * 
  */
 typedef struct {
-	uint32_t Vp;
-	uint32_t Vs;
-	uint32_t Ip;
-	uint32_t Is;
+	uint32_t Vp; // V
+	uint32_t Vs; // V x100
+	uint32_t Ip; // mA
+	uint32_t Is; // mA
 } rms_t;
 
 /**

@@ -33,6 +33,7 @@ typedef uint8_t test_result_t;
 typedef struct {
 	test_result_t test_result;
 	rms_t rms;
+	uint32_t Vl; // Line Voltage - V
 } test_status_t;
 
 
