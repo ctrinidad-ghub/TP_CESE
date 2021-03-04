@@ -390,6 +390,9 @@ void fsm_task (void*arg)
 			break;
 		case REPORT:
 			appLcdSend(REPORT_LCD, &deviceControl.test_status);
+
+			triggerBuzzer(deviceControl.test_status.test_result);
+
 			appAdcDisable();
 			vTaskDelay(300 / portTICK_PERIOD_MS);
 

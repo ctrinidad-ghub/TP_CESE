@@ -10,6 +10,7 @@
 #define _APP_GPIO_H_
 
 #include "driver/gpio.h"
+#include "../inc/test_status.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,6 +77,13 @@ bool isCancelPressed( void );
  * @return false 
  */
 bool isConfigPressed( void );
+
+/**
+ * @brief Trigger buffer sound
+ *
+ * @param test_status
+ */
+void triggerBuzzer(test_result_t test_result);
 
 #ifdef __cplusplus
 }
