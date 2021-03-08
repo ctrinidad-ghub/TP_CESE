@@ -11,23 +11,23 @@
 
 #include "../inc/app_adc.h"
 
-#define VS_FAILED 1
-#define IP_FAILED 2
-#define IS_FAILED 4
-#define TEST_PASS 0
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#define VS_FAILED 1 /*!<Secondary Voltage test has failed                           */
+#define IP_FAILED 2 /*!<Primary current test has failed                             */
+#define IS_FAILED 4 /*!<Secondary current test has failed                           */
+#define TEST_PASS 0 /*!<The test has passed without failures                        */
+
 /**
- * @brief
+ * @brief Test result data type
  * 
  */
 typedef uint8_t test_result_t;
 
 /**
- * @brief
+ * @brief Test status information
  *
  */
 typedef struct {

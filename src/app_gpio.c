@@ -18,7 +18,7 @@
 
 // GPIO
 #define GPIO_OUTPUT_PIN_SEL  (1ULL<<CPV | 1ULL<<CSV | 1ULL<<buzzer)
-#define GPIO_INPUT_PIN_SEL   (1ULL<<pCan | 1ULL<<pConf | 1ULL<<pTest)
+#define GPIO_INPUT_PIN_SEL   (1ULL<<pCan | 1ULL<<pConf | 1ULL<<pTest | 1ULL<<sSwitch)
 
 // TMR
 #define TIMER_DIVIDER         16     //  Hardware timer clock divider
@@ -45,7 +45,7 @@ typedef struct {
 
 /*=====[Definitions of private global variables]=============================*/
 
-static button_t testButton, cancelButton, configButton;
+static button_t testButton, cancelButton, configButton, safetySwitch;
 static uint32_t buzzerPeriods = 0;
 static bool activePeriod = 1;
 
@@ -90,12 +90,16 @@ void button_task( void* taskParmPtr )
 	fsmButtonInit( &cancelButton, pCan );
 	fsmButtonInit( &configButton, pConf );
 	fsmButtonInit( &testButton, pTest );
+	// Reuse the debounce filter to remove
+	// false safetySwitch transitions
+	fsmButtonInit( &safetySwitch, sSwitch);
 
 	while( 1 )
 	{
 		fsmButtonUpdate( &cancelButton );
 		fsmButtonUpdate( &configButton );
 		fsmButtonUpdate( &testButton );
+		fsmButtonUpdate( &safetySwitch );
 
 		vTaskDelay( BUTTON_RATE );
 	}
@@ -230,6 +234,10 @@ bool isCancelPressed( void ){
 
 bool isConfigPressed( void ){
 	return isButtonPressed( &configButton );
+}
+
+bool isSafetySwitchOpen( void ){
+	return isButtonPressed( &safetySwitch );
 }
 
 void appGpioInit( void )

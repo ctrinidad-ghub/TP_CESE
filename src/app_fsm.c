@@ -285,13 +285,20 @@ void fsm_task (void*arg)
 
 			if ( isTestPressed( ) ) {
 				if ( isConfigurated() ) {
-					deviceControl.test_fsm_state = POWER_UP_PRIMARY;
-					app_WiFiDisconnect(&deviceControl.wifi_state);
-					vTaskDelay(500 / portTICK_PERIOD_MS);
-					appAdcEnable();
-					connectPrimary();
-					deviceControl.fsm_timer = 0;
-					deviceControl.test_status.test_result = TEST_PASS;
+					if ( isSafetySwitchOpen( ) ) {
+					    appLcdSend(SAFETY_SWITCH_OPEN, NULL);
+					    vTaskDelay(3000 / portTICK_PERIOD_MS);
+					    appLcdSend(WAITING_TEST, &deviceControl.configData);
+					}
+					else {
+						deviceControl.test_fsm_state = POWER_UP_PRIMARY;
+						app_WiFiDisconnect(&deviceControl.wifi_state);
+						vTaskDelay(500 / portTICK_PERIOD_MS);
+						appAdcEnable();
+						connectPrimary();
+						deviceControl.fsm_timer = 0;
+						deviceControl.test_status.test_result = TEST_PASS;
+					}
 				}
 				else {
 					deviceControl.test_fsm_state = ASK_FOR_CONFIGURATION;
@@ -321,7 +328,7 @@ void fsm_task (void*arg)
 			deviceControl.test_fsm_state = WAIT_TEST;
 			break;
 		case POWER_UP_PRIMARY:
-			if ( isCancelPressed( ) ) {
+			if ( isCancelPressed( ) || isSafetySwitchOpen( ) ) {
 				xSemaphoreTake(deviceControl.test_fsm_state_mutex, portMAX_DELAY);
 				deviceControl.test_fsm_state = CANCEL_FSM;
 				xSemaphoreGive(deviceControl.test_fsm_state_mutex);
@@ -332,7 +339,7 @@ void fsm_task (void*arg)
 			} else deviceControl.fsm_timer++;
 			break;
 		case MEASURE_PRIMARY:
-			if ( isCancelPressed( ) ) {
+			if ( isCancelPressed( ) || isSafetySwitchOpen( ) ) {
 				xSemaphoreTake(deviceControl.test_fsm_state_mutex, portMAX_DELAY);
 				deviceControl.test_fsm_state = CANCEL_FSM;
 				xSemaphoreGive(deviceControl.test_fsm_state_mutex);
@@ -346,7 +353,7 @@ void fsm_task (void*arg)
 			}
 			break;
 		case POWER_DOWN_PRIMARY:
-			if ( isCancelPressed( ) ) {
+			if ( isCancelPressed( ) || isSafetySwitchOpen( ) ) {
 				xSemaphoreTake(deviceControl.test_fsm_state_mutex, portMAX_DELAY);
 				deviceControl.test_fsm_state = CANCEL_FSM;
 				xSemaphoreGive(deviceControl.test_fsm_state_mutex);
@@ -358,7 +365,7 @@ void fsm_task (void*arg)
 			} else deviceControl.fsm_timer++;
 			break;
 		case POWER_UP_SECONDARY:
-			if ( isCancelPressed( ) ) {
+			if ( isCancelPressed( ) || isSafetySwitchOpen( ) ) {
 				xSemaphoreTake(deviceControl.test_fsm_state_mutex, portMAX_DELAY);
 				deviceControl.test_fsm_state = CANCEL_FSM;
 				xSemaphoreGive(deviceControl.test_fsm_state_mutex);
@@ -369,7 +376,7 @@ void fsm_task (void*arg)
 			} else deviceControl.fsm_timer++;
 			break;
 		case MEASURE_SECONDARY:
-			if ( isCancelPressed( ) ) {
+			if ( isCancelPressed( ) || isSafetySwitchOpen( ) ) {
 				xSemaphoreTake(deviceControl.test_fsm_state_mutex, portMAX_DELAY);
 				deviceControl.test_fsm_state = CANCEL_FSM;
 				xSemaphoreGive(deviceControl.test_fsm_state_mutex);
@@ -428,8 +435,12 @@ void fsm_task (void*arg)
 			deviceControl.test_fsm_state = WAIT_TEST;
 			break;
 		case CANCEL_FSM:
-			appLcdSend(CANCEL_LCD, NULL);
 			disconnectPrimarySecondary();
+
+			if ( isSafetySwitchOpen( ) )
+				appLcdSend(SAFETY_SWITCH_OPEN, NULL);
+			else
+				appLcdSend(CANCEL_LCD, NULL);
 
 			// Wait until the ADC conversion finishes,
 			// if we are in the middle of an ADC conversion

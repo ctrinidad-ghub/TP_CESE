@@ -40,7 +40,8 @@ typedef enum {
 	CANCEL_LCD,                 /*!<Canceling LCD message                              */
 	BLOCK_DEVICE_LCD,           /*!<No WiFi connection - Block device LCD message      */
 	BLOCK_DEVICE_WEB_SERVER_LCD,/*!<Web Server no available - Block device LCD message */
-	FAILED_PRINTER_COM          /*!<Failed printer RS232 printer comm LCD message      */
+	FAILED_PRINTER_COM,         /*!<Failed printer RS232 printer comm LCD message      */
+	SAFETY_SWITCH_OPEN          /*!<The Safety Switch is open                          */
 } lcd_msg_id_t;
 
 /**
@@ -53,9 +54,12 @@ void appLcdInit(void);
  * @brief Send a lcd_msg_id_t to the LCD
  * 
  * @param lcd_msg_id Message to send
- * @param rms Pointer to an struct that contains the RMS values to show
+ * @param param Pointer to an struct that contains:
+ * 			- the RMS values to show
+ * 			- the configuration parameters
+ * 			- the test status
  * 
- * @note The rms pointer is optional and depends on the lcd_msg_id to send
+ * @note The param pointer is optional and depends on the lcd_msg_id to send
  * 
  */
 void appLcdSend(lcd_msg_id_t lcd_msg_id, void *param);

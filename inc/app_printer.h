@@ -20,10 +20,10 @@ extern "C" {
  * 
  */
 typedef enum {
-	PRINTER_NO_COMM, // Printer never respond
-	PRINTER_NOT_READY,
-	PRINTER_READY,
-	PRINTER_OK
+	PRINTER_NO_COMM,   /*!<Printer never respond                               */
+	PRINTER_NOT_READY, /*!<Printer is not ready, answer to command <SOH>A/r (Status request) */
+	PRINTER_READY,     /*!<Printer ready to print                              */
+	PRINTER_OK         /*!<The print command was successful                    */
 } printerStatus_t;
 
 /**

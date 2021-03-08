@@ -297,7 +297,7 @@ void app_WiFiConnect(wifi_state_t *wifi_state)
     }
 }
 
-int app_WiFiInit(wifi_state_t *wifi_state){
+esp_err_t app_WiFiInit(wifi_state_t *wifi_state){
 	esp_err_t err;
 
 	err = readSSIDData();

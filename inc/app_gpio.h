@@ -16,6 +16,7 @@
 extern "C" {
 #endif
 
+/** @cond */
 #define CPV     GPIO_NUM_26
 #define CSV     GPIO_NUM_25
 
@@ -24,14 +25,16 @@ extern "C" {
 #define pTest   GPIO_NUM_39
 
 #define buzzer        GPIO_NUM_4
-#define safetySwitch  GPIO_NUM_2
+#define sSwitch       GPIO_NUM_2 // Safety Switch
+/** @endcond */
 
 /**
  * @brief Initialize GPIO
  * 
  * @note This function configures the GPIOs for:
- *      - The transformer's primary and secondary windings
- *      - The front panel buttons
+ *      - Transformer's primary and secondary windings
+ *      - Front panel buttons
+ *      - SafetySwitch
  * 
  */
 void appGpioInit( void );
@@ -79,11 +82,19 @@ bool isCancelPressed( void );
 bool isConfigPressed( void );
 
 /**
- * @brief Trigger buffer sound
+ * @brief Trigger buzzer sounds
  *
- * @param test_status
+ * @param test_result
  */
 void triggerBuzzer(test_result_t test_result);
+
+/**
+ * @brief Check if the Safety Switch is open
+ *
+ * @return true
+ * @return false
+ */
+bool isSafetySwitchOpen( void );
 
 #ifdef __cplusplus
 }

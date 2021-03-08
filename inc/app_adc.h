@@ -71,7 +71,9 @@ typedef struct {
  *
  */
 typedef enum {
-	ENABLE, DISABLE, CONV
+	ENABLE,                    /*!<ADC enable                                */
+	DISABLE,                   /*!<ADC disable                               */
+	CONV                       /*!<ADC converting                            */
 } adc_status_enum_t;
 
 /**
@@ -79,10 +81,10 @@ typedef enum {
  * 
  */
 typedef struct {
-	uint32_t Vp; // V
-	uint32_t Vs; // V x100
-	uint32_t Ip; // mA
-	uint32_t Is; // mA
+	uint32_t Vp;  /*!<Primary Voltage [V]                                */
+	uint32_t Vs;  /*!<Secondary Voltage [V x100]                         */
+	uint32_t Ip;  /*!<Primary current [mA]                               */
+	uint32_t Is;  /*!<Secondary current [mA]                             */
 } rms_t;
 
 /**
@@ -94,8 +96,7 @@ void appAdcInit(void);
 /**
  * @brief Start a new RMS ADC conversion
  * 
- * @param rms 
- * @return * void 
+ * @param rms
  */
 void appAdcStart(rms_t *rms);
 
@@ -114,6 +115,7 @@ void appAdcDisable(void);
 /**
  * @brief Return ADC status
  *
+ * @return adc_status_enum_t
  */
 adc_status_enum_t appAdcStatus(void);
 

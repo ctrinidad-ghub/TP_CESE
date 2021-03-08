@@ -13,18 +13,28 @@
 extern "C" {
 #endif
 
+/** @cond */
 #define LOTE_LENGTH 20
+/** @endcond */
 
+/**
+ * @brief Parameter thresholds structure
+ *
+ */
 typedef struct {
 	int32_t max;
 	int32_t min;
 } parametersRange_t;
 
+/**
+ * @brief Measured Parameters structure
+ *
+ */
 typedef struct {
-	parametersRange_t Vp;
-	parametersRange_t Vs;
-	parametersRange_t Ip;
-	parametersRange_t Is;
+	parametersRange_t Vp;  /*!<Primary Voltage                                    */
+	parametersRange_t Vs;  /*!<Secondary Voltage                                  */
+	parametersRange_t Ip;  /*!<Primary current                                    */
+	parametersRange_t Is;  /*!<Secondary current                                  */
 } trafoParameters_t;
 
 /**
@@ -32,10 +42,10 @@ typedef struct {
  *
  */
 typedef struct {
-	uint32_t id;
-	char lote[LOTE_LENGTH];
-	uint32_t test_num;
-	trafoParameters_t trafoParameters;
+	uint32_t id;					    /*!<Test Identification Number                           */
+	char lote[LOTE_LENGTH];		        /*!<Transformer batch                                    */
+	uint32_t test_num;                  /*!<Test Number                                          */
+	trafoParameters_t trafoParameters;  /*!<Measured Parameters structure                        */
 } configData_t;
 
 /**
@@ -48,9 +58,9 @@ typedef struct {
 void processRxData(char* rx_buff, configData_t *configData);
 
 /**
- * @brief Perform tx package to be send to the web server
+ * @brief Perform tx package to be sent to the web server
  *
- * @param rx_buff Tx buffer to send to the web server
+ * @param tx_buff Tx buffer to send to the web server
  * @param configData Pointer to a configuration struct to store the data
  *
  */
