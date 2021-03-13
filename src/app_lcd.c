@@ -232,11 +232,11 @@ void appLcd_task(void *arg)
 		switch(lcd_msg.lcd_msg_id) {
 		case WAITING_TEST:
 			lcdGoToXY(6,0);
-			lcdSendString( (const char*) lcd_msg.configData->lote );
+			lcdSendString( (const char*) lcd_msg.configData->batchId );
 			lcdGoToXY(5,1);
-			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vs.max/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vouts.max/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
 			lcdGoToXY(13,1);
-			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vs.min/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
+			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Vouts.min/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
 			lcdGoToXY(5,2);
 			lcdSendIntFixedDigit( lcd_msg.configData->trafoParameters.Ip.max, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
 			lcdGoToXY(13,2);
@@ -279,7 +279,7 @@ void appLcd_task(void *arg)
 
 			// Secondary Voltage
 			lcdGoToXY(4,1);
-			lcdSendIntFixedDigit( lcd_msg.test_status->rms.Vs/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
+			lcdSendIntFixedDigit( lcd_msg.test_status->Vouts/10, VS_AMOUNT_OF_DIG, VS_DECIMAL_POINT_POS );
 			lcdGoToXY(9,1);
 			if ((lcd_msg.test_status->test_result & VS_FAILED) && VS_FAILED)
 				lcdSendString("  **FALLO**");
@@ -287,7 +287,7 @@ void appLcd_task(void *arg)
 				lcdSendString("     OK    ");
 			// Primary Current
 			lcdGoToXY(4,2);
-			lcdSendIntFixedDigit( lcd_msg.test_status->rms.Ip, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
+			lcdSendIntFixedDigit( lcd_msg.test_status->Ip, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
 			lcdGoToXY(10,2);
 			if ((lcd_msg.test_status->test_result & IP_FAILED) && IP_FAILED)
 				lcdSendString(" **FALLO**");
@@ -295,7 +295,7 @@ void appLcd_task(void *arg)
 				lcdSendString("    OK    ");
 			// Secondary Current
 			lcdGoToXY(4,3);
-			lcdSendIntFixedDigit( lcd_msg.test_status->rms.Is, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
+			lcdSendIntFixedDigit( lcd_msg.test_status->Is, I_CANT_DIG, DECIMAL_POINT_NOT_USED );
 			lcdGoToXY(10,3);
 			if ((lcd_msg.test_status->test_result & IS_FAILED) && IS_FAILED)
 				lcdSendString(" **FALLO**");

@@ -138,7 +138,7 @@ static printerStatus_t printTestStatus(test_status_t *test_status, const char* l
 	else {
 		strcpy((char*) uartBuffer, (char*) VS_FAIL_MSG);
 	}
-	sprintf(aux, "%d", test_status->rms.Vs/100);
+	sprintf(aux, "%d", test_status->Vouts/100);
 	strcat((char*) uartBuffer, (char*) aux);
 	if (test_status->test_result == TEST_PASS) {
 		strcat((char*) uartBuffer, (char*) "V\r");
@@ -159,7 +159,7 @@ static printerStatus_t printTestStatus(test_status_t *test_status, const char* l
 	else {
 		strcpy((char*) uartBuffer, (char*) IP_FAIL_MSG);
 	}
-	sprintf(aux, "%d", test_status->rms.Ip);
+	sprintf(aux, "%d", test_status->Ip);
 	strcat((char*) uartBuffer, (char*) aux);
 	if (test_status->test_result == TEST_PASS) {
 		strcat((char*) uartBuffer, (char*) "mA\r");
@@ -180,7 +180,7 @@ static printerStatus_t printTestStatus(test_status_t *test_status, const char* l
 	else {
 		strcpy((char*) uartBuffer, (char*) IS_FAIL_MSG);
 	}
-	sprintf(aux, "%d", test_status->rms.Is);
+	sprintf(aux, "%d", test_status->Is);
 	strcat((char*) uartBuffer, (char*) aux);
 	if (test_status->test_result == TEST_PASS) {
 		strcat((char*) uartBuffer, (char*) "mA\r");
@@ -196,7 +196,7 @@ static printerStatus_t printTestStatus(test_status_t *test_status, const char* l
 
 	if (test_status->test_result != TEST_PASS) {
 		strcpy((char*) uartBuffer, (char*) VL_FAIL_MSG);
-		sprintf(aux, "%d", test_status->Vl);
+		sprintf(aux, "%d", test_status->Vinp);
 		strcat((char*) uartBuffer, (char*) aux);
 		strcat((char*) uartBuffer, (char*) "V\r");
 		len = strlen((char*) uartBuffer);

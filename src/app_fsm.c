@@ -81,14 +81,18 @@ bool isConfigurated(void)
 
 void cleanConfiguration(void){
 	deviceControl.configData.id = 0;
-	for(int i=0; i<LOTE_LENGTH; i++) deviceControl.configData.lote[i]=0;
-	deviceControl.configData.test_num = 0;
-	deviceControl.configData.trafoParameters.Vp.max = 0;
-	deviceControl.configData.trafoParameters.Vp.min = 0;
+	for(int i=0; i<BATCHID_LENGTH; i++) deviceControl.configData.batchId[i]=0;
+	for(int i=0; i<CODE_LENGTH; i++) deviceControl.configData.code[i]=0;
+	deviceControl.configData.trafoParameters.Vinp.max = 0;
+	deviceControl.configData.trafoParameters.Vinp.min = 0;
+	deviceControl.configData.trafoParameters.Voutp.max = 0;
+	deviceControl.configData.trafoParameters.Voutp.min = 0;
 	deviceControl.configData.trafoParameters.Ip.max = 0;
 	deviceControl.configData.trafoParameters.Ip.min = 0;
-	deviceControl.configData.trafoParameters.Vs.max = 0;
-	deviceControl.configData.trafoParameters.Vs.min = 0;
+	deviceControl.configData.trafoParameters.Vins.max = 0;
+	deviceControl.configData.trafoParameters.Vins.min = 0;
+	deviceControl.configData.trafoParameters.Vouts.max = 0;
+	deviceControl.configData.trafoParameters.Vouts.min = 0;
 	deviceControl.configData.trafoParameters.Is.max = 0;
 	deviceControl.configData.trafoParameters.Is.min = 0;
 	deviceControl.configurated = 0;
@@ -134,15 +138,15 @@ void checkTafo_task (void*arg)
 				break;
 			}
 			else if (deviceControl.test_fsm_state == MEASURE_PRIMARY) {
-				deviceControl.test_status.rms.Ip = rms.Ip;
-				deviceControl.test_status.rms.Vs = rms.Vs;
-				deviceControl.test_status.Vl = rms.Vp;
+				deviceControl.test_status.Ip = rms.Ip;
+				deviceControl.test_status.Vouts = rms.Vs;
+				deviceControl.test_status.Vinp = rms.Vp;
 				if (rms.Ip > deviceControl.configData.trafoParameters.Ip.max ||
 					rms.Ip < deviceControl.configData.trafoParameters.Ip.min) {
 					deviceControl.test_status.test_result |= IP_FAILED;
 				}
-				if (rms.Vs > deviceControl.configData.trafoParameters.Vs.max ||
-					rms.Vs < deviceControl.configData.trafoParameters.Vs.min) {
+				if (rms.Vs > deviceControl.configData.trafoParameters.Vouts.max ||
+					rms.Vs < deviceControl.configData.trafoParameters.Vouts.min) {
 					deviceControl.test_status.test_result |= VS_FAILED;
 				}
 
@@ -150,8 +154,9 @@ void checkTafo_task (void*arg)
 				if(deviceControl.test_mode == DETAILED_TEST_MODE) appLcdSend(MEASURING_PRIMARY, &rms);
 			}
 			else if (deviceControl.test_fsm_state == MEASURE_SECONDARY) {
-				deviceControl.test_status.rms.Is = rms.Is;
-				deviceControl.test_status.rms.Vp = rms.Vp;
+				deviceControl.test_status.Is = rms.Is;
+				deviceControl.test_status.Voutp = rms.Vp;
+				deviceControl.test_status.Vins = rms.Vs;
 				if (rms.Is > deviceControl.configData.trafoParameters.Is.max ||
 					rms.Is < deviceControl.configData.trafoParameters.Is.min) {
 					deviceControl.test_status.test_result |= IS_FAILED;
@@ -414,18 +419,18 @@ void fsm_task (void*arg)
 			}
 
 			// Write test results to the web server
-			processTxData(buffHttp, &deviceControl.configData);
+			processTxData(buffHttp, &deviceControl.configData, &deviceControl.test_status);
 			err = post_http_results(buffHttp);
 			if (err != ESP_OK) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);
-				appLcdSend(BLOCK_DEVICE_WEB_SERVER_LCD, NULL);
-				deviceControl.test_fsm_state = BLOCK_DEVICE;
+				//appLcdSend(BLOCK_DEVICE_WEB_SERVER_LCD, NULL);
+				//deviceControl.test_fsm_state = BLOCK_DEVICE;
 				break;
 			}
 
 			// Send data to the printer
-			printerStatus_t printerStatus = print(&deviceControl.test_status, deviceControl.configData.lote);
+			printerStatus_t printerStatus = print(&deviceControl.test_status, deviceControl.configData.batchId);
 			if (printerStatus == PRINTER_NO_COMM) {
 				appLcdSend(FAILED_PRINTER_COM, NULL);
 				vTaskDelay(3000 / portTICK_PERIOD_MS);

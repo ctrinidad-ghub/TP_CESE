@@ -10,13 +10,13 @@
 #include "freertos/FreeRTOS.h"
 #include "esp_log.h"
 #include "esp_event.h"
-#include "tcpip_adapter.h"
+#include "esp_netif.h"
 #include "esp_err.h"
 #include "esp_tls.h"
 #include "esp_http_client.h"
 
-#define GET_URL   "http://Cristian-PC/get.php"
-#define POST_URL  "http://Cristian-PC/index.php"
+#define GET_URL   "https://iris-test-api.azurewebsites.net/api/TransformersTesterConfigs/Last"
+#define POST_URL  "https://iris-test-api.azurewebsites.net/api/TransformersTests/"
 
 static const char *TAG = "HTTP_CLIENT";
 
@@ -96,7 +96,6 @@ esp_err_t post_http_results(char *buffer)
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 
     // POST
-    //const char *post_data = "id_Dispositivo=4&lote_partida=2033657-1&test_Numero=10&tension_linea=220&corriente_vacio=50";
     esp_http_client_set_method(client, HTTP_METHOD_POST);
     esp_http_client_set_post_field(client, buffer, strlen(buffer));
     esp_err_t err = esp_http_client_perform(client);

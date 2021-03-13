@@ -31,9 +31,13 @@ typedef uint8_t test_result_t;
  *
  */
 typedef struct {
-	test_result_t test_result;
-	rms_t rms;
-	uint32_t Vl; // Line Voltage - V
+	test_result_t test_result;   /*!<Test result data                                   */
+	uint32_t Vinp;               /*!<Input Primary Voltage [V]                          */
+	uint32_t Voutp;              /*!<Output Primary Voltage [V]                         */
+	uint32_t Vins;               /*!<Input Secondary Voltage [V x100]                   */
+	uint32_t Vouts;              /*!<Output Secondary Voltage [V x100]                  */
+	uint32_t Ip;                 /*!<Primary current [mA]                               */
+	uint32_t Is;                 /*!<Secondary current [mA]                             */
 } test_status_t;
 
 
