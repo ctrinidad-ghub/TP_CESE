@@ -64,6 +64,7 @@ esp_err_t get_http_config(char *buffer, uint32_t buffSize)
     esp_http_client_config_t config = {
     	.url = GET_URL,
         .event_handler = _http_event_handler,
+		.timeout_ms = 7000,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err;
@@ -92,6 +93,7 @@ esp_err_t post_http_results(char *buffer)
 	esp_http_client_config_t config = {
 		.url = POST_URL,
 		.event_handler = _http_event_handler,
+		.timeout_ms = 10000,
 	};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 

@@ -21,7 +21,7 @@
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
-#define ADC_ITERATION 			10
+#define ADC_ITERATION 			5
 #define MAX_HTTP_RECV_BUFFER 	2048
 
 typedef enum {
@@ -120,6 +120,7 @@ void checkTafo_task (void*arg)
 {
 	rms_t rms;
 	uint8_t adc_iteration;
+	test_fsm_state_t test_fsm_state;
 
 	while(1) {
 		xSemaphoreTake(deviceControl.checkTafo_semphr, portMAX_DELAY);
@@ -133,11 +134,13 @@ void checkTafo_task (void*arg)
 			appAdcStart(&rms);
 
 			xSemaphoreTake(deviceControl.test_fsm_state_mutex, portMAX_DELAY);
-			if (deviceControl.test_fsm_state == CANCEL_FSM) {
-				xSemaphoreGive(deviceControl.test_fsm_state_mutex);
+			test_fsm_state = deviceControl.test_fsm_state;
+			xSemaphoreGive(deviceControl.test_fsm_state_mutex);
+
+			if (test_fsm_state == CANCEL_FSM) {
 				break;
 			}
-			else if (deviceControl.test_fsm_state == MEASURE_PRIMARY) {
+			else if (test_fsm_state == MEASURE_PRIMARY) {
 				deviceControl.test_status.Ip = rms.Ip;
 				deviceControl.test_status.Vouts = rms.Vs;
 				deviceControl.test_status.Vinp = rms.Vp;
@@ -153,7 +156,7 @@ void checkTafo_task (void*arg)
 				// In DETAILED_TEST_MODE the measured values should be shown
 				if(deviceControl.test_mode == DETAILED_TEST_MODE) appLcdSend(MEASURING_PRIMARY, &rms);
 			}
-			else if (deviceControl.test_fsm_state == MEASURE_SECONDARY) {
+			else if (test_fsm_state == MEASURE_SECONDARY) {
 				deviceControl.test_status.Is = rms.Is;
 				deviceControl.test_status.Voutp = rms.Vp;
 				deviceControl.test_status.Vins = rms.Vs;
@@ -165,7 +168,6 @@ void checkTafo_task (void*arg)
 				// In DETAILED_TEST_MODE the measured values should be shown
 				if(deviceControl.test_mode == DETAILED_TEST_MODE) appLcdSend(MEASURING_SECONDARY, &rms);
 			}
-			xSemaphoreGive(deviceControl.test_fsm_state_mutex);
 		}
 		xSemaphoreGive(deviceControl.checkTafoInProgress_semphr);
 	}
@@ -175,6 +177,7 @@ void fsm_task (void*arg)
 {
 	esp_err_t err;
 	uint8_t countWiFiAttempt = 0;
+	TickType_t xLastWakeTime;
 
 	disconnectPrimarySecondary();
 
@@ -220,17 +223,17 @@ void fsm_task (void*arg)
 
 			appLcdSend(WELCOME, NULL);
 
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			vTaskDelay(LCD_MSG_WAIT);
 			appAdcDisable();
 			deviceControl.test_fsm_state = WIFI_CONNECTION;
 			break;
 		case WIFI_CONNECTION:
 			appLcdSend(WIFI_CONNECTING, NULL);
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			vTaskDelay(LCD_MSG_WAIT);
 			err = app_WiFiInit(&deviceControl.wifi_state);
 			if (err != ESP_OK) {
 				appLcdSend(WIFI_NO_SSID_AND_PASS, NULL);
-				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				vTaskDelay(LCD_MSG_WAIT);
 				deviceControl.test_fsm_state = WIFI_CONFIG;
 				break;
 			}
@@ -238,7 +241,7 @@ void fsm_task (void*arg)
 				app_WiFiConnect(&deviceControl.wifi_state);
 				if (deviceControl.wifi_state != WIFI_CONNECTED) {
 					appLcdSend(WIFI_NO_SSID_AND_PASS, NULL);
-					vTaskDelay(3000 / portTICK_PERIOD_MS);
+					vTaskDelay(LCD_MSG_WAIT);
 					deviceControl.test_fsm_state = WIFI_CONFIG;
 					break;
 				}
@@ -247,7 +250,7 @@ void fsm_task (void*arg)
 			// Only print this information in detailed mode
 			if (deviceControl.test_mode == DETAILED_TEST_MODE) {
 				appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
-				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				vTaskDelay(LCD_MSG_WAIT);
 			}
 
 			appLcdSend(WAIT_CONFIG, NULL);
@@ -263,7 +266,7 @@ void fsm_task (void*arg)
 					app_WiFiConnect(&deviceControl.wifi_state);
 					if (deviceControl.wifi_state != WIFI_CONNECTED) {
 						appLcdSend(WIFI_SMARTCONFIG_FAIL, NULL);
-						vTaskDelay(3000 / portTICK_PERIOD_MS);
+						vTaskDelay(LCD_MSG_WAIT);
 						countWiFiAttempt++;
 						if (countWiFiAttempt == 3) {
 							appLcdSend(BLOCK_DEVICE_LCD, NULL);
@@ -274,7 +277,7 @@ void fsm_task (void*arg)
 				}
 				if (deviceControl.wifi_state == WIFI_CONNECTED) {
 					appLcdSend(WIFI_SUCCESSFULLY_CONNECTED, NULL);
-					vTaskDelay(3000 / portTICK_PERIOD_MS);
+					vTaskDelay(LCD_MSG_WAIT);
 
 					appLcdSend(WAIT_CONFIG, NULL);
 					deviceControl.test_fsm_state = WAIT_TEST;
@@ -292,7 +295,7 @@ void fsm_task (void*arg)
 				if ( isConfigurated() ) {
 					if ( isSafetySwitchOpen( ) ) {
 					    appLcdSend(SAFETY_SWITCH_OPEN, NULL);
-					    vTaskDelay(3000 / portTICK_PERIOD_MS);
+					    vTaskDelay(LCD_MSG_WAIT);
 					    appLcdSend(WAITING_TEST, &deviceControl.configData);
 					}
 					else {
@@ -316,19 +319,24 @@ void fsm_task (void*arg)
 			}
 			break;
 		case CONFIGURATING:
+			// Initialize the xLastWakeTime variable with the current time.
+			xLastWakeTime = xTaskGetTickCount ();
+
 			if( configurate() ){
-				vTaskDelay(2000 / portTICK_PERIOD_MS);
+				// Use vTaskDelayUntil to avoid waiting too much time
+				vTaskDelayUntil(&xLastWakeTime, LCD_MSG_WAIT);
+
 			    appLcdSend(WAITING_TEST, &deviceControl.configData);
 			}
 			else {
 				appLcdSend(CONFIGURATION_FAIL, NULL);
-			    vTaskDelay(3000 / portTICK_PERIOD_MS);
+			    vTaskDelay(LCD_MSG_WAIT);
 			    appLcdSend(WAIT_CONFIG, NULL);
 			} 
 			deviceControl.test_fsm_state = WAIT_TEST;
 			break;
 		case ASK_FOR_CONFIGURATION:
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			vTaskDelay(LCD_MSG_WAIT);
 			appLcdSend(WAIT_CONFIG, NULL);
 			deviceControl.test_fsm_state = WAIT_TEST;
 			break;
@@ -412,7 +420,7 @@ void fsm_task (void*arg)
 			app_WiFiConnect(&deviceControl.wifi_state);
 			if (deviceControl.wifi_state != WIFI_CONNECTED) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
-				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				vTaskDelay(LCD_MSG_WAIT);
 				appLcdSend(BLOCK_DEVICE_LCD, NULL);
 				deviceControl.test_fsm_state = BLOCK_DEVICE;
 				break;
@@ -423,17 +431,17 @@ void fsm_task (void*arg)
 			err = post_http_results(buffHttp);
 			if (err != ESP_OK) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
-				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				vTaskDelay(LCD_MSG_WAIT);
 				//appLcdSend(BLOCK_DEVICE_WEB_SERVER_LCD, NULL);
 				//deviceControl.test_fsm_state = BLOCK_DEVICE;
-				break;
+				//break;
 			}
 
 			// Send data to the printer
 			printerStatus_t printerStatus = print(&deviceControl.test_status, deviceControl.configData.batchId);
 			if (printerStatus == PRINTER_NO_COMM) {
 				appLcdSend(FAILED_PRINTER_COM, NULL);
-				vTaskDelay(3000 / portTICK_PERIOD_MS);
+				vTaskDelay(LCD_MSG_WAIT);
 			}
 
 			appLcdSend(WAITING_TEST, &deviceControl.configData);
@@ -442,6 +450,9 @@ void fsm_task (void*arg)
 		case CANCEL_FSM:
 			disconnectPrimarySecondary();
 
+			// Initialize the xLastWakeTime variable with the current time.
+			xLastWakeTime = xTaskGetTickCount ();
+
 			if ( isSafetySwitchOpen( ) )
 				appLcdSend(SAFETY_SWITCH_OPEN, NULL);
 			else
@@ -449,26 +460,26 @@ void fsm_task (void*arg)
 
 			// Wait until the ADC conversion finishes,
 			// if we are in the middle of an ADC conversion
-			xSemaphoreTake(deviceControl.checkTafoInProgress_semphr, 1000 / portTICK_PERIOD_MS);
+			xSemaphoreTake(deviceControl.checkTafoInProgress_semphr, 1800 / portTICK_PERIOD_MS);
 
 			if (appAdcStatus() == ENABLE) appAdcDisable();
 
 			// Reconnect to WiFi
 			app_WiFiConnect(&deviceControl.wifi_state);
 			if (deviceControl.wifi_state != WIFI_CONNECTED) {
-				appLcdSend(FAILED_REPORT_LCD, NULL);
-				vTaskDelay(3000 / portTICK_PERIOD_MS);
 				appLcdSend(BLOCK_DEVICE_LCD, NULL);
 				deviceControl.test_fsm_state = BLOCK_DEVICE;
 				break;
 			}
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
+
+			// Use vTaskDelayUntil to avoid waiting too much time
+			vTaskDelayUntil(&xLastWakeTime, LCD_MSG_WAIT);
 			appLcdSend(WAITING_TEST, &deviceControl.configData);
 			deviceControl.test_fsm_state = WAIT_TEST;
 			break;
 		default:
 
-			vTaskDelay(3000 / portTICK_PERIOD_MS);
+			vTaskDelay(LCD_MSG_WAIT);
 			break;
 		}
 		vTaskDelay(50 / portTICK_PERIOD_MS);

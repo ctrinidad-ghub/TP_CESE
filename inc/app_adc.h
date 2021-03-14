@@ -11,10 +11,11 @@
 
 #include "driver/adc.h"
 
-/** @cond */
-#define SAMPLES_IN_20MS		128 // Amount of samples in 20 ms (power line period)
-#define AMOUNT_OF_CYLCES	8   // Amount of cycles to sample ()
 
+#define SAMPLES_IN_20MS		128 /*!<Amount of samples in 20 ms (power line period)      */
+#define AMOUNT_OF_CYLCES	8   /*!<Amount of cycles of 20 ms to read                   */
+
+/** @cond */
 //i2s sample rate
 #define I2S_SAMPLE_RATE   	(SAMPLES_IN_20MS*50) // 50 = 1/20ms
 
@@ -45,7 +46,6 @@
 #define OFFSET_800mA    0 // Primary current
 #define OFFSET_1500mA  -8 // Secondary current
 
-
 // 1st order filter: y[n] = B0 * x[n] + A1 * y[n-1]
 #define TAO_US 	500
 #define TS_US 	20000/SAMPLES_IN_20MS
@@ -67,23 +67,23 @@ typedef struct {
 /** @endcond */
 
 /**
- * @brief This enum type shows the ADC status
+ * @brief This enumeration type shows the ADC status
  *
  */
 typedef enum {
-	ENABLE,                    /*!<ADC enable                                */
-	DISABLE,                   /*!<ADC disable                               */
-	CONV                       /*!<ADC converting                            */
+	ENABLE,       /*!<ADC enable                                         */
+	DISABLE,      /*!<ADC disable                                        */
+	CONV          /*!<ADC converting                                     */
 } adc_status_enum_t;
 
 /**
- * @brief This struct type is used across the firmware to store the RMS values
+ * @brief This structure type is used across the firmware to store the ADC RMS values
  * 
  */
 typedef struct {
-	uint32_t Vp;  /*!<Primary Voltage [V]                                */
+	uint32_t Vp;  /*!<Primary Voltage   [V]                              */
 	uint32_t Vs;  /*!<Secondary Voltage [V x100]                         */
-	uint32_t Ip;  /*!<Primary current [mA]                               */
+	uint32_t Ip;  /*!<Primary current   [mA]                             */
 	uint32_t Is;  /*!<Secondary current [mA]                             */
 } rms_t;
 
@@ -97,6 +97,9 @@ void appAdcInit(void);
  * @brief Start a new RMS ADC conversion
  * 
  * @param rms
+ *
+ * @note This function takes about 1.6 seg in processing the four ADC channels
+ *       It reads AMOUNT_OF_CYLCES cycles sampling SAMPLES_IN_20MS in 20 ms for each channel
  */
 void appAdcStart(rms_t *rms);
 

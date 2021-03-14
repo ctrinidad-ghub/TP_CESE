@@ -39,11 +39,21 @@ const char IP_FAIL_MSG[]   = "121100000510040IP ";           // Font2, y=5.1mm, 
 const char IS_FAIL_MSG[]   = "121100000220040IS "; 	         // Font2, y=2.2mm, x=4mm
 const char VL_FAIL_MSG[]   = "111100000000040VL "; 			 // Font1, y=0mm,   x=4mm
 
+const char VS_FAIL_LABEL[] = "121100000810200**FALLO**\r";   // Font2, y=8.1mm, x=20mm
+const char IP_FAIL_LABEL[] = "121100000510200**FALLO**\r";   // Font2, y=5.1mm, x=20mm
+const char IS_FAIL_LABEL[] = "121100000220200**FALLO**\r";   // Font2, y=2.2mm, x=20mm
+const char VS_PASS_LABEL[] = "121100000810255OK\r";          // Font2, y=8.1mm, x=25.5mm
+const char IP_PASS_LABEL[] = "121100000510255OK\r";          // Font2, y=5.1mm, x=25.5mm
+const char IS_PASS_LABEL[] = "121100000220255OK\r";          // Font2, y=2.2mm, x=25.5mm
+
 const char TEST_PASS_MSG[] = "161100000250030OK\r";    // Font6, y=2.5mm, x=3mm
 const char LOTE_PASS_MSG[] = "131100001300040LOTE: ";  // Font3, y=13mm,  x=4mm
 const char VS_PASS_MSG[]   = "171100000800140VS ";     // Font7, y=8mm,   x=14mm
 const char IP_PASS_MSG[]   = "171100000400140IP "; 	   // Font7, y=4mm,   x=14mm
 const char IS_PASS_MSG[]   = "171100000000140IS "; 	   // Font7, y=0mm,   x=14mm
+
+const char VOLT[]		   = "V\r";
+const char MAMP[]		   = "mA\r";
 
 /*=====[Definitions of extern global variables]==============================*/
 
@@ -95,7 +105,7 @@ static printerStatus_t getPrinterStatus(void)
 static printerStatus_t printTestStatus(test_status_t *test_status, const char* lote)
 {
 	int len;
-	char aux[10];
+	char aux[20];
 
 	// Begin label: <STX>L/r
 	uart_write_bytes(UART_NUM_2, BEGIN_LABEL, sizeof(BEGIN_LABEL));
@@ -138,19 +148,20 @@ static printerStatus_t printTestStatus(test_status_t *test_status, const char* l
 	else {
 		strcpy((char*) uartBuffer, (char*) VS_FAIL_MSG);
 	}
-	sprintf(aux, "%d", test_status->Vouts/100);
+	// Print one decimal digit
+	sprintf(aux, "%d.%d", test_status->Vouts/100, test_status->Vouts/10 - (test_status->Vouts/100)*10);
 	strcat((char*) uartBuffer, (char*) aux);
-	if (test_status->test_result == TEST_PASS) {
-		strcat((char*) uartBuffer, (char*) "V\r");
-	}
-	else {
-		if ((test_status->test_result & VS_FAILED) && VS_FAILED)
-			strcat((char*) uartBuffer, (char*) "V  **FALLO** \r");
-		else
-			strcat((char*) uartBuffer, (char*) "V     OK \r");
-	}
+	strcat((char*) uartBuffer, (char*) VOLT);
 	len = strlen((char*) uartBuffer);
 	uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
+	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
+	if (test_status->test_result != TEST_PASS) {
+		if ((test_status->test_result & VS_FAILED) && VS_FAILED)
+			uart_write_bytes(UART_NUM_2, VS_FAIL_LABEL, sizeof(VS_FAIL_LABEL));
+		else
+			uart_write_bytes(UART_NUM_2, VS_PASS_LABEL, sizeof(VS_PASS_LABEL));
+	}
+
 	// IP
 	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
 	if (test_status->test_result == TEST_PASS) {
@@ -161,17 +172,17 @@ static printerStatus_t printTestStatus(test_status_t *test_status, const char* l
 	}
 	sprintf(aux, "%d", test_status->Ip);
 	strcat((char*) uartBuffer, (char*) aux);
-	if (test_status->test_result == TEST_PASS) {
-		strcat((char*) uartBuffer, (char*) "mA\r");
-	}
-	else {
-		if ((test_status->test_result & IP_FAILED) && IP_FAILED)
-			strcat((char*) uartBuffer, (char*) "mA  **FALLO** \r");
-		else
-			strcat((char*) uartBuffer, (char*) "mA     OK \r");
-	}
+	strcat((char*) uartBuffer, (char*) MAMP);
 	len = strlen((char*) uartBuffer);
 	uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
+	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
+	if (test_status->test_result != TEST_PASS) {
+		if ((test_status->test_result & IP_FAILED) && IP_FAILED)
+			uart_write_bytes(UART_NUM_2, IP_FAIL_LABEL, sizeof(IP_FAIL_LABEL));
+		else
+			uart_write_bytes(UART_NUM_2, IP_PASS_LABEL, sizeof(IP_PASS_LABEL));
+	}
+
 	// IS
 	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
 	if (test_status->test_result == TEST_PASS) {
@@ -182,17 +193,16 @@ static printerStatus_t printTestStatus(test_status_t *test_status, const char* l
 	}
 	sprintf(aux, "%d", test_status->Is);
 	strcat((char*) uartBuffer, (char*) aux);
-	if (test_status->test_result == TEST_PASS) {
-		strcat((char*) uartBuffer, (char*) "mA\r");
-	}
-	else {
-		if ((test_status->test_result & IS_FAILED) && IS_FAILED)
-			strcat((char*) uartBuffer, (char*) "mA  **FALLO** \r");
-		else
-			strcat((char*) uartBuffer, (char*) "mA     OK \r");
-	}
+	strcat((char*) uartBuffer, (char*) MAMP);
 	len = strlen((char*) uartBuffer);
 	uart_write_bytes(UART_NUM_2, (const char *) uartBuffer, len);
+	for (int i=0;i<BUF_SIZE;i++) *(uartBuffer+i)=0;
+	if (test_status->test_result != TEST_PASS) {
+		if ((test_status->test_result & IS_FAILED) && IS_FAILED)
+			uart_write_bytes(UART_NUM_2, IS_FAIL_LABEL, sizeof(IS_FAIL_LABEL));
+		else
+			uart_write_bytes(UART_NUM_2, IS_PASS_LABEL, sizeof(IS_PASS_LABEL));
+	}
 
 	if (test_status->test_result != TEST_PASS) {
 		strcpy((char*) uartBuffer, (char*) VL_FAIL_MSG);

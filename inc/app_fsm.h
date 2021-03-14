@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#define LCD_MSG_WAIT            (3000 / portTICK_PERIOD_MS)  /*!<All the temporary messages in the LCD will be shown for 3 seg      */
+
 /**
  * @brief Initialize main FSM 
  * 

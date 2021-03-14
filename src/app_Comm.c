@@ -42,12 +42,16 @@ void parseRxString(char *rx, char *data, uint8_t data_lenght, char *eod, char *s
 {
 	char *ptr, *ptr2;
 
-	ptr = strstr(rx, data) + data_lenght-1;
+	ptr = strstr(rx, data);
 
-	if (ptr != NULL) /* Substring found */
-	{
+	if (ptr != NULL) {
+		// Substring found
+		ptr += data_lenght-1;
 		ptr2 = strstr(ptr, eod); // eod: end of data character
-		strncpy(str, ptr, ptr2-ptr);
+		if (ptr2 != NULL) {
+			// Substring 2 found
+			strncpy(str, ptr, ptr2-ptr);
+		}
 	}
 }
 
@@ -60,7 +64,7 @@ int32_t parseRxInteger(char *rx, char *data, uint8_t data_lenght, char *eod)
 
 	parseRxString(rx, data, data_lenght, eod, str);
 
-	if (str != NULL) /* Substring found */
+	if (str[0] != 0) /* Substring found */
 	{
 		idata=atoi(str);
 	}
@@ -104,13 +108,15 @@ void processTxData(char* tx_buff, configData_t *configData, test_status_t *test_
 	sprintf(aux, "%d", test_status->Vinp);
 	strcat(tx_buff, aux);
 	strcat(tx_buff, ",\"VoutSecondary\":");
-	sprintf(aux, "%d", test_status->Vouts);
+	// Send one decimal digit in Vs
+	sprintf(aux, "%d.%d", test_status->Vouts/100, test_status->Vouts/10 - (test_status->Vouts/100)*10);
 	strcat(tx_buff, aux);
 	strcat(tx_buff, ",\"IPrimary\":");
 	sprintf(aux, "%d", test_status->Ip);
 	strcat(tx_buff, aux);
 	strcat(tx_buff, ",\"VinSecondary\":");
-	sprintf(aux, "%d", test_status->Vins);
+	// Send one decimal digit in Vs
+	sprintf(aux, "%d.%d", test_status->Vins/100, test_status->Vins/10 - (test_status->Vins/100)*10);
 	strcat(tx_buff, aux);
 	strcat(tx_buff, ",\"VoutPrimary\":");
 	sprintf(aux, "%d", test_status->Voutp);
