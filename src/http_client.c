@@ -99,6 +99,7 @@ esp_err_t post_http_results(char *buffer)
 
     // POST
     esp_http_client_set_method(client, HTTP_METHOD_POST);
+    esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_http_client_set_post_field(client, buffer, strlen(buffer));
     esp_err_t err = esp_http_client_perform(client);
 

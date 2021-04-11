@@ -93,6 +93,7 @@ void adc_dma_task(void*arg)
     uint32_t adcIndex = 0;
     uint8_t adc_init = 0;
     uint16_t* pI2SReadBuff= I2SReadBuff;
+    int32_t s_rms; // signed rms value
 
     while (1) {
 		// Read ADC data from I2S bus
@@ -118,7 +119,9 @@ void adc_dma_task(void*arg)
 			}
 
 			*adc[adcIndex].rms /= (AMOUNT_OF_CYLCES-1);
-			*adc[adcIndex].rms = (*adc[adcIndex].rms * adc[adcIndex].gain)/100 + adc[adcIndex].offset;
+			s_rms = (*adc[adcIndex].rms * adc[adcIndex].gain)/100 + adc[adcIndex].offset;
+			if (s_rms > 0) *adc[adcIndex].rms = (uint32_t) s_rms;
+			else *adc[adcIndex].rms = 0;
 
 			adc[adcIndex].sum_voltage = 0;
 			if (adcIndex == ADC_CHANNELS-1) {

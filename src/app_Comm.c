@@ -104,30 +104,30 @@ void processTxData(char* tx_buff, configData_t *configData, test_status_t *test_
 	strcat(tx_buff, configData->code);
 	strcat(tx_buff, "\",\"BatchId\":\"");
 	strcat(tx_buff, configData->batchId);
-	strcat(tx_buff, "\",\"VinPrimary\":");
+	strcat(tx_buff, "\",\"VinPrimary\":\"");
 	sprintf(aux, "%d", test_status->Vinp);
 	strcat(tx_buff, aux);
-	strcat(tx_buff, ",\"VoutSecondary\":");
+	strcat(tx_buff, ".0\",\"VoutSecondary\":\"");
 	// Send one decimal digit in Vs
 	sprintf(aux, "%d.%d", test_status->Vouts/100, test_status->Vouts/10 - (test_status->Vouts/100)*10);
 	strcat(tx_buff, aux);
-	strcat(tx_buff, ",\"IPrimary\":");
+	strcat(tx_buff, "\",\"IPrimary\":\"");
 	sprintf(aux, "%d", test_status->Ip);
 	strcat(tx_buff, aux);
-	strcat(tx_buff, ",\"VinSecondary\":");
+	strcat(tx_buff, ".0\",\"VinSecondary\":\"");
 	// Send one decimal digit in Vs
 	sprintf(aux, "%d.%d", test_status->Vins/100, test_status->Vins/10 - (test_status->Vins/100)*10);
 	strcat(tx_buff, aux);
-	strcat(tx_buff, ",\"VoutPrimary\":");
+	strcat(tx_buff, "\",\"VoutPrimary\":\"");
 	sprintf(aux, "%d", test_status->Voutp);
 	strcat(tx_buff, aux);
-	strcat(tx_buff, ",\"ISecondary\":");
+	strcat(tx_buff, ".0\",\"ISecondary\":\"");
 	sprintf(aux, "%d", test_status->Is);
 	strcat(tx_buff, aux);
 	if (test_status->test_result == TEST_PASS) {
-		strcat(tx_buff, ",\"TestResult\":\"OK\"}");
+		strcat(tx_buff, ".0\",\"TestResult\":\"OK\",}");
 	}
 	else {
-		strcat(tx_buff, ",\"TestResult\":\"RECHAZADO\"}");
+		strcat(tx_buff, ".0\",\"TestResult\":\"RECHAZADO\",}");
 	}
 }

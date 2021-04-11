@@ -39,7 +39,7 @@
 #define ZER0         1300 // mV
 #define GAIN_230V      40
 #define GAIN_30V      666
-#define GAIN_800mA    120 // Primary current
+#define GAIN_800mA    130 // Primary current
 #define GAIN_1500mA   260 // Secondary current
 #define OFFSET_230V   -74
 #define OFFSET_30V   -825
