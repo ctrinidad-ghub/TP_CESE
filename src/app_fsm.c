@@ -23,6 +23,7 @@
 
 #define ADC_ITERATION 			5
 #define MAX_HTTP_RECV_BUFFER 	2048
+#define POST_RETRIES			2
 
 typedef enum {
 	STARTUP,
@@ -428,13 +429,19 @@ void fsm_task (void*arg)
 
 			// Write test results to the web server
 			processTxData(buffHttp, &deviceControl.configData, &deviceControl.test_status);
-			err = post_http_results(buffHttp);
+
+			uint8_t postRetries = 0;
+			do {
+				err = post_http_results(buffHttp, MAX_HTTP_RECV_BUFFER);
+				postRetries++;
+			} while (err!= ESP_OK && postRetries < POST_RETRIES);
+
 			if (err != ESP_OK) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
 				vTaskDelay(LCD_MSG_WAIT);
-				//appLcdSend(BLOCK_DEVICE_WEB_SERVER_LCD, NULL);
-				//deviceControl.test_fsm_state = BLOCK_DEVICE;
-				//break;
+				appLcdSend(BLOCK_DEVICE_WEB_SERVER_LCD, NULL);
+				deviceControl.test_fsm_state = BLOCK_DEVICE;
+				break;
 			}
 
 			// Send data to the printer

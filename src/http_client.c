@@ -14,6 +14,7 @@
 #include "esp_err.h"
 #include "esp_tls.h"
 #include "esp_http_client.h"
+#include "../inc/app_Comm.h"
 
 #define GET_URL   "https://iris-test-api.azurewebsites.net/api/TransformersTesterConfigs/Last"
 #define POST_URL  "https://iris-test-api.azurewebsites.net/api/TransformersTests/"
@@ -64,7 +65,7 @@ esp_err_t get_http_config(char *buffer, uint32_t buffSize)
     esp_http_client_config_t config = {
     	.url = GET_URL,
         .event_handler = _http_event_handler,
-		.timeout_ms = 7000,
+		.timeout_ms = 10000,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
     esp_err_t err;
@@ -88,12 +89,12 @@ esp_err_t get_http_config(char *buffer, uint32_t buffSize)
     return (err);
 }
 
-esp_err_t post_http_results(char *buffer)
+esp_err_t post_http_results(char *buffer, uint32_t totalBuffSize)
 {
 	esp_http_client_config_t config = {
 		.url = POST_URL,
 		.event_handler = _http_event_handler,
-		.timeout_ms = 10000,
+		.timeout_ms = 15000,
 	};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 
@@ -102,6 +103,15 @@ esp_err_t post_http_results(char *buffer)
     esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_http_client_set_post_field(client, buffer, strlen(buffer));
     esp_err_t err = esp_http_client_perform(client);
+
+    if (err == ESP_OK) {
+    	// Get POST response body
+    	for(int i=0; i<totalBuffSize; i++) buffer[i] = 0;
+    	uint32_t buffSize = esp_http_client_read(client, buffer, totalBuffSize);
+    	if (buffSize != 0) {
+    		err = checkPostData(buffer);
+    	}
+    }
 
     esp_http_client_cleanup(client);
     return (err);

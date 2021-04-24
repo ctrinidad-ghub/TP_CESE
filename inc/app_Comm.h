@@ -72,6 +72,18 @@ void processRxData(char* rx_buff, configData_t *configData);
  */
 void processTxData(char* tx_buff, configData_t *configData, test_status_t *test_status);
 
+/**
+ * @brief Check POST body from the web server
+ *
+ * @param buffer Pointer to a receive buffer
+ *
+ * @return
+ *  - ESP_OK on successful
+ *  - ESP_FAIL on error
+ *
+ */
+esp_err_t checkPostData(char *rx_buff);
+
 #ifdef __cplusplus
 }
 #endif

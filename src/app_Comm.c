@@ -131,3 +131,14 @@ void processTxData(char* tx_buff, configData_t *configData, test_status_t *test_
 		strcat(tx_buff, ".0\",\"TestResult\":\"RECHAZADO\",}");
 	}
 }
+
+esp_err_t checkPostData(char *rx_buff) {
+	// Dummy POST body data check
+	// Future improvement: verify that the whole parameters were
+	// properly written based on the sent data
+	char *ptr;
+
+	ptr = strstr(rx_buff, ID);
+	if (ptr != NULL) return ESP_OK;
+	else return ESP_FAIL;
+}

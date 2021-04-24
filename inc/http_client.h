@@ -32,13 +32,14 @@ esp_err_t get_http_config(char *buffer, uint32_t buffSize);
  *        the web server
  *
  * @param buffer Pointer to a receive buffer
+ * @param buffSize Total buffer size available in bytes
  *
  * @return
  *  - ESP_OK on successful
  *  - ESP_FAIL on error
  *
  */
-esp_err_t post_http_results(char *buffer);
+esp_err_t post_http_results(char *buffer, uint32_t totalBuffSize);
 
 #ifdef __cplusplus
 }

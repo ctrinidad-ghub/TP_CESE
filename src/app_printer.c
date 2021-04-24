@@ -79,7 +79,7 @@ static printerStatus_t getPrinterStatus(void)
 	xQueueReset( uart0_queue );
 	// Get the printer status
 	uart_write_bytes(UART_NUM_2, GET_STATUS, sizeof(GET_STATUS));
-	xQueueReceive(uart0_queue, (void * )&event, (portTickType) 60000 / portTICK_RATE_MS); // Wait until 1 minute
+	xQueueReceive(uart0_queue, (void * )&event, (portTickType) 30000 / portTICK_RATE_MS); // Wait up to 30 seconds
 	if(event.type == UART_DATA) {
 		len = uart_read_bytes(UART_NUM_2, uartBuffer, BUF_SIZE, 0);
 	}
