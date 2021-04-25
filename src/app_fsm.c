@@ -18,6 +18,7 @@
 #include "../inc/app_Comm.h"
 #include "../inc/http_client.h"
 #include "../inc/test_status.h"
+#include "../inc/app_error.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
@@ -80,7 +81,8 @@ bool isConfigurated(void)
 	return deviceControl.configurated;
 }
 
-void cleanConfiguration(void){
+void cleanConfiguration(void)
+{
 	deviceControl.configData.id = 0;
 	for(int i=0; i<BATCHID_LENGTH; i++) deviceControl.configData.batchId[i]=0;
 	for(int i=0; i<CODE_LENGTH; i++) deviceControl.configData.code[i]=0;
@@ -179,33 +181,6 @@ void fsm_task (void*arg)
 	esp_err_t err;
 	uint8_t countWiFiAttempt = 0;
 	TickType_t xLastWakeTime;
-
-	disconnectPrimarySecondary();
-
-	deviceControl.test_fsm_state = STARTUP;
-	deviceControl.wifi_state = WIFI_NO_INIT;
-
-	// Create semaphores and mutex
-	deviceControl.checkTafo_semphr = xSemaphoreCreateBinary();
-	deviceControl.checkTafoInProgress_semphr = xSemaphoreCreateBinary();
-	deviceControl.test_fsm_state_mutex = xSemaphoreCreateMutex();
-	if( deviceControl.checkTafo_semphr == NULL || deviceControl.checkTafoInProgress_semphr == NULL ||
-		deviceControl.test_fsm_state_mutex == NULL )
-	{
-		// TODO: Define error policy
-		while(1);
-	}
-	deviceControl.configurated = 0;
-	deviceControl.test_status.test_result = TEST_PASS;
-	deviceControl.fsm_timer = 0;
-	cleanConfiguration();
-
-	BaseType_t res = xTaskCreate(checkTafo_task, "checkTafo_task", 1024 * 2, NULL, 5, NULL);
-	if (res != pdPASS)
-	{
-		// TODO: Define error policy
-		while(1);
-	}
 
 	// Wait until the LCD has initiated
 	vTaskDelay(3000 / portTICK_PERIOD_MS);
@@ -434,7 +409,7 @@ void fsm_task (void*arg)
 			do {
 				err = post_http_results(buffHttp, MAX_HTTP_RECV_BUFFER);
 				postRetries++;
-			} while (err!= ESP_OK && postRetries < POST_RETRIES);
+			} while (err != ESP_OK && postRetries < POST_RETRIES);
 
 			if (err != ESP_OK) {
 				appLcdSend(FAILED_REPORT_LCD, NULL);
@@ -485,24 +460,46 @@ void fsm_task (void*arg)
 			deviceControl.test_fsm_state = WAIT_TEST;
 			break;
 		default:
-
-			vTaskDelay(LCD_MSG_WAIT);
+			// It should not happen
+			appFatalError( );
 			break;
 		}
 		vTaskDelay(50 / portTICK_PERIOD_MS);
     }
-
-    vTaskDelete(NULL);
 }
 
 /*=====[Definitions of external functions]===================================*/
 
 void appFsmInit( void )
 {
-	BaseType_t res = xTaskCreate(fsm_task, "fsm_task", 1024 * 4, NULL, 5, NULL);
+	disconnectPrimarySecondary();
+
+	deviceControl.test_fsm_state = STARTUP;
+	deviceControl.wifi_state = WIFI_NO_INIT;
+
+	// Create semaphores and mutex
+	deviceControl.checkTafo_semphr = xSemaphoreCreateBinary();
+	deviceControl.checkTafoInProgress_semphr = xSemaphoreCreateBinary();
+	deviceControl.test_fsm_state_mutex = xSemaphoreCreateMutex();
+	if( deviceControl.checkTafo_semphr == NULL || deviceControl.checkTafoInProgress_semphr == NULL ||
+		deviceControl.test_fsm_state_mutex == NULL )
+	{
+		appFatalError( );
+	}
+	deviceControl.configurated = 0;
+	deviceControl.test_status.test_result = TEST_PASS;
+	deviceControl.fsm_timer = 0;
+	cleanConfiguration();
+
+	BaseType_t res = xTaskCreate(checkTafo_task, "checkTafo_task", 1024 * 2, NULL, 5, NULL);
 	if (res != pdPASS)
 	{
-		// TODO: Define error policy
-		while(1);
+		appFatalError( );
+	}
+
+	res = xTaskCreate(fsm_task, "fsm_task", 1024 * 4, NULL, 5, NULL);
+	if (res != pdPASS)
+	{
+		appFatalError( );
 	}
 }

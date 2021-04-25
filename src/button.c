@@ -23,21 +23,21 @@ portMUX_TYPE buttonMux = portMUX_INITIALIZER_UNLOCKED;
 
 /*=====[Definitions of internal functions]===================================*/
 
-void buttonPressed( button_t* config )
+static void buttonPressed( button_t* config )
 {
 	portENTER_CRITICAL(&buttonMux);
 	config->pressed = 1;
 	portEXIT_CRITICAL(&buttonMux);
 }
 
-void buttonReleased( button_t* config )
+static void buttonReleased( button_t* config )
 {
 	portENTER_CRITICAL(&buttonMux);
 	config->pressed = 0;
 	portEXIT_CRITICAL(&buttonMux);
 }
 
-void fsmButtonError( button_t* config )
+static void fsmButtonError( button_t* config )
 {
 	config->fsmButtonState = STATE_BUTTON_UP;
 }

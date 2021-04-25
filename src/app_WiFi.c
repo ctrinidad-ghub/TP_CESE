@@ -21,6 +21,7 @@
 #include "esp_netif.h"
 #include "esp_smartconfig.h"
 #include "../inc/app_WiFi.h"
+#include "../inc/app_error.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
@@ -110,7 +111,8 @@ static void smartconfig_task(void * parm)
     }
 }
 
-static void WiFiConnectToKnownAP(void){
+static void WiFiConnectToKnownAP(void)
+{
     wifi_config_t wifi_config;
     bzero(&wifi_config, sizeof(wifi_config_t));
     wifi_config.sta.pmf_cfg.capable = true;
@@ -137,7 +139,11 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 			esp_wifi_connect();
 		}
 		else {
-			xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 3, NULL);
+			BaseType_t res = xTaskCreate(smartconfig_task, "smartconfig_task", 4096, NULL, 3, NULL);
+			if (res != pdPASS)
+			{
+				appFatalError( );
+			}
 		}
 	}
 	else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
@@ -183,7 +189,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 	}
 }
 
-static int readSSIDData(void)
+static esp_err_t readSSIDData(void)
 {
 	nvs_handle_t my_handle;
 	esp_err_t err;
@@ -297,7 +303,8 @@ void app_WiFiConnect(wifi_state_t *wifi_state)
     }
 }
 
-esp_err_t app_WiFiInit(wifi_state_t *wifi_state){
+esp_err_t app_WiFiInit(wifi_state_t *wifi_state)
+{
 	esp_err_t err;
 
 	err = readSSIDData();

@@ -132,7 +132,8 @@ void processTxData(char* tx_buff, configData_t *configData, test_status_t *test_
 	}
 }
 
-esp_err_t checkPostData(char *rx_buff) {
+esp_err_t checkPostData(char *rx_buff)
+{
 	// Dummy POST body data check
 	// Future improvement: verify that the whole parameters were
 	// properly written based on the sent data

@@ -13,6 +13,7 @@
 #include "../inc/button.h"
 #include "../inc/app_gpio.h"
 #include "driver/timer.h"
+#include "../inc/app_error.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
@@ -51,7 +52,7 @@ static bool activePeriod = 1;
 
 /*=====[Definitions of internal functions]===================================*/
 
-static void trafoPinInit( void )
+static void generalGpioInit( void )
 {
     gpio_config_t io_conf;
     //disable interrupt
@@ -65,8 +66,9 @@ static void trafoPinInit( void )
     //disable pull-up mode
     io_conf.pull_up_en = 0;
 
-    gpio_set_level(CPV, 1);
-	gpio_set_level(CSV, 1);
+    // disconnect primary and secondary power
+    disconnectPrimarySecondary();
+
 	gpio_set_level(buzzer, 1);
 
     //configure GPIO with the given settings
@@ -84,7 +86,7 @@ static void trafoPinInit( void )
     gpio_config(&io_conf);
 }
 
-void button_task( void* taskParmPtr )
+static void button_task( void* taskParmPtr )
 {
 
 	fsmButtonInit( &cancelButton, pCan );
@@ -158,7 +160,7 @@ static void app_timer_init(timer_idx_t timer_idx,
     		 (void *) Timer_Specs_p, ESP_INTR_FLAG_IRAM, NULL);
 }
 
-void periodic_task(void *arg)
+static void periodic_task(void *arg)
 {
 	bool level = 0;
 	uint32_t buzzerCounter = BUZZER_ACTIVE_COUNT;
@@ -212,51 +214,53 @@ void connectPrimary(void)
 	gpio_set_level(CSV, 1);
 }
 
-void connectSecondary(void) // connect secondary
+void connectSecondary(void)
 {
 	gpio_set_level(CPV, 1);
 	gpio_set_level(CSV, 0);
 }
 
-void disconnectPrimarySecondary(void) // disconnect primary secondary
+void disconnectPrimarySecondary(void)
 {
 	gpio_set_level(CPV, 1);
 	gpio_set_level(CSV, 1);
 }
 
-bool isTestPressed( void ){
+bool isTestPressed(void)
+{
 	return isButtonPressed( &testButton );
 }
 
-bool isCancelPressed( void ){
+bool isCancelPressed(void)
+{
 	return isButtonPressed( &cancelButton );
 }
 
-bool isConfigPressed( void ){
+bool isConfigPressed(void)
+{
 	return isButtonPressed( &configButton );
 }
 
-bool isSafetySwitchOpen( void ){
+bool isSafetySwitchOpen(void)
+{
 	return isButtonPressed( &safetySwitch );
 }
 
-void appGpioInit( void )
+void appGpioInit(void)
 {
 	TaskHandle_t handle_periodic_task;
 
-	trafoPinInit( );
+	generalGpioInit( );
 
 	BaseType_t res = xTaskCreate(button_task, "button_task", 1024 * 2, NULL, 5, NULL);
 	if (res != pdPASS)
 	{
-		// TODO: Define error policy
-		while(1);
+		appFatalError( );
 	}
 	res = xTaskCreate(periodic_task, "timer_periodic_task", 1024, NULL, 5, &handle_periodic_task);
 	if (res != pdPASS)
 	{
-		// TODO: Define error policy
-		while(1);
+		appFatalError( );
 	}
 	app_timer_init((timer_idx_t) TIMER_0, WITH_RELOAD, TIMER_INTERVAL0_USEC, &handle_periodic_task);
 }

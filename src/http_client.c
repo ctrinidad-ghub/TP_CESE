@@ -16,10 +16,20 @@
 #include "esp_http_client.h"
 #include "../inc/app_Comm.h"
 
+/*=====[Definition of private macros, constants or data types]===============*/
+
 #define GET_URL   "https://iris-test-api.azurewebsites.net/api/TransformersTesterConfigs/Last"
 #define POST_URL  "https://iris-test-api.azurewebsites.net/api/TransformersTests/"
 
+/*=====[Definitions of extern global variables]==============================*/
+
+/*=====[Definitions of public global variables]==============================*/
+
+/*=====[Definitions of private global variables]=============================*/
+
 static const char *TAG = "HTTP_CLIENT";
+
+/*=====[Definitions of internal functions]===================================*/
 
 esp_err_t _http_event_handler(esp_http_client_event_t *evt)
 {
@@ -59,6 +69,8 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     }
     return ESP_OK;
 }
+
+/*=====[Definitions of external functions]===================================*/
 
 esp_err_t get_http_config(char *buffer, uint32_t buffSize)
 {

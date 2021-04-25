@@ -5,7 +5,6 @@
 
 /*=====[Inclusions of function dependencies]=================================*/
 
-#include <app_printer.h>
 #include "freertos/FreeRTOS.h"
 #include "esp_system.h"
 #include "esp_spi_flash.h"
@@ -15,6 +14,7 @@
 #include "../inc/app_lcd.h"
 #include "../inc/app_fsm.h"
 #include "../inc/app_gpio.h"
+#include "../inc/app_printer.h"
 #include "../inc/main.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
@@ -37,6 +37,9 @@ void app_main()
 	}
 	ESP_ERROR_CHECK( ret );
 
+	// GPIO Initialization
+	appGpioInit( );
+
 	// LCD Initialization
 	appLcdInit( );
 
@@ -44,10 +47,7 @@ void app_main()
 	appAdcInit( );
 
 	// Printer Initialization
-	appPrinter();
-
-	// GPIO Initialization
-	appGpioInit( );
+	appPrinter( );
 
 	// Main FSM Initialization
 	appFsmInit( );

@@ -13,8 +13,10 @@
 #include "../inc/app_lcd.h"
 #include "../inc/app_Comm.h"
 #include "../inc/test_status.h"
+#include "../inc/app_error.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
+
 #define LCD_WIDTH				20
 #define LCD_LINE     			4
 
@@ -205,7 +207,7 @@ static QueueHandle_t lcd_queue;
 
 /*=====[Definitions of internal functions]===================================*/
 
-void appLcd_task(void *arg)
+static void appLcd_task(void *arg)
 {
 	lcd_config_t lcd_config;
 	lcd_msg_t lcd_msg;
@@ -310,7 +312,8 @@ void appLcd_task(void *arg)
 
 /*=====[Definitions of external functions]===================================*/
 
-void appLcdSend(lcd_msg_id_t lcd_msg_id, void *param) {
+void appLcdSend(lcd_msg_id_t lcd_msg_id, void *param)
+{
 	lcd_msg_t lcd_msg;
 	rms_t *rms;
 
@@ -339,17 +342,16 @@ void appLcdSend(lcd_msg_id_t lcd_msg_id, void *param) {
 	xQueueSend( lcd_queue, ( void * ) &lcd_msg, ( TickType_t ) 0 );
 }
 
-void appLcdInit(void) {
+void appLcdInit(void)
+{
 	lcd_queue = xQueueCreate(1, sizeof(lcd_msg_t));
 	if(lcd_queue == NULL)
 	{
-		// TODO: Define error policy
-		while(1);
+		appFatalError( );
 	}
 	BaseType_t res = xTaskCreate(appLcd_task, "appLcd_task", 2048, NULL, 5, NULL);
 	if (res != pdPASS)
 	{
-		// TODO: Define error policy
-		while(1);
+		appFatalError( );
 	}
 }

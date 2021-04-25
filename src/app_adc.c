@@ -14,6 +14,7 @@
 #include "driver/i2s.h"
 #include "esp_err.h"
 #include "../inc/app_adc.h"
+#include "../inc/app_error.h"
 
 /*=====[Definition of private macros, constants or data types]===============*/
 
@@ -60,12 +61,14 @@ void appAdcEnable()
 	 adc_status.status = ENABLE;
 }
 
-void appAdcDisable(void){
+void appAdcDisable(void)
+{
 	adc_status.status = DISABLE;
 	i2s_driver_uninstall(I2S_NUM_0);
 }
 
-adc_status_enum_t appAdcStatus(void){
+adc_status_enum_t appAdcStatus(void)
+{
 	return adc_status.status;
 }
 
@@ -182,16 +185,14 @@ void appAdcInit(void)
 	adc_status.startConv = xSemaphoreCreateBinary();
 	if(adc_status.adc_queue == NULL || adc_status.startConv == NULL)
 	{
-		// TODO: Define error policy
-		while(1);
+		appFatalError( );
 	}
 
 	//Characterize ADC
 	adc_chars = calloc(1, sizeof(esp_adc_cal_characteristics_t));
 	if( adc_chars == NULL)
 	{
-		// TODO: Define error policy
-		while(1);
+		appFatalError( );
 	}
 	esp_adc_cal_characterize((adc_unit_t) ADC_UNIT_1, (adc_atten_t) ATTEN, ADC_WIDTH_BIT_12, DEFAULT_VREF, adc_chars);
 
@@ -199,8 +200,7 @@ void appAdcInit(void)
 	BaseType_t res = xTaskCreate(adc_dma_task, "adc_dma_task", 1024 * 4, NULL, 5, NULL);
 	if (res != pdPASS)
 	{
-		// TODO: Define error policy
-		while(1);
+		appFatalError( );
 	}
 }
 
