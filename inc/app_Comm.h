@@ -75,7 +75,7 @@ void processTxData(char* tx_buff, configData_t *configData, test_status_t *test_
 /**
  * @brief Check POST body from the web server
  *
- * @param buffer Pointer to a receive buffer
+ * @param rx_buff Pointer to a receive buffer
  *
  * @return
  *  - ESP_OK on successful
