@@ -1,0 +1,18 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP ACDC
+D AC/DC power supply with regulated isolated DC output. 220V Voltage Input, 5V Voltage Output 700mA
+K ac dc power supply
+$ENDCMP
+#
+$CMP DCDC
+D Step Up DC/DC Converter Module, MT3608 based. Output Voltage up to 28V, 2A, 2-24V Input Voltage
+$ENDCMP
+#
+$CMP ESP32-WROOM-32-V4
+D RF Module, ESP32-D0WDQ6 SoC, Wi-Fi 802.11b/g/n, Bluetooth, BLE, 32-bit, 2.7-3.6V, onboard antenna, SMD
+K RF Radio BT ESP ESP32 Espressif onboard PCB antenna
+F https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32_datasheet_en.pdf
+$ENDCMP
+#
+#End Doc Library
