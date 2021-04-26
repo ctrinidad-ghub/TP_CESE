@@ -59,8 +59,14 @@ typedef struct {
  * @param rx_buff Rx buffer got from web server
  * @param configData Pointer to a configuration struct to store the data
  *
+ * @return
+ *  - ESP_OK on successful
+ *  - ESP_FAIL on error:
+ *     - Incomplete JSON data
+ *     - Invalid numbers, e.g. number contains letters
+ *
  */
-void processRxData(char* rx_buff, configData_t *configData);
+esp_err_t processRxData(char* rx_buff, configData_t *configData);
 
 /**
  * @brief Perform tx package to be sent to the web server

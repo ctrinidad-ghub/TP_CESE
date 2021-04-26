@@ -111,9 +111,11 @@ bool configurate(void)
 
 	err = get_http_config(buffHttp, MAX_HTTP_RECV_BUFFER);
 
-	if (err == ESP_OK){
-		processRxData(buffHttp, &deviceControl.configData);
-		deviceControl.configurated = 1;
+	if (err == ESP_OK) {
+		err = processRxData(buffHttp, &deviceControl.configData);
+		if (err == ESP_OK) {
+			deviceControl.configurated = 1;
+		} else deviceControl.configurated = 0;
 	} else deviceControl.configurated = 0;
 
 	return (deviceControl.configurated);

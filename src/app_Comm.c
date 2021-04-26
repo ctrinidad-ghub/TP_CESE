@@ -64,36 +64,43 @@ int32_t parseRxInteger(char *rx, char *data, uint8_t data_lenght, char *eod)
 
 	parseRxString(rx, data, data_lenght, eod, str);
 
+	// Validating received data from webserver
+	for (int i=0;i<strlen(str);i++) {
+		if (str[i]<'0' || str[i]>'9') str[0]=0;
+	}
+
 	if (str[0] != 0) /* Substring found */
 	{
 		idata=atoi(str);
 	}
 	else /* Substring not found */
 	{
-		idata=0;
+		idata=-1;
 	}
 	return idata;
 }
 
 /*=====[Definitions of external functions]===================================*/
 
-void processRxData(char* rx_buff, configData_t *configData)
+esp_err_t processRxData(char* rx_buff, configData_t *configData)
 {
-	configData->id=parseRxInteger(rx_buff, ID, sizeof(ID), ",");
+	if ((configData->id=parseRxInteger(rx_buff, ID, sizeof(ID), ",")) == -1) return ESP_FAIL;
 	parseRxString(rx_buff, BATCHID, sizeof(BATCHID), "\",",configData->batchId);
 	parseRxString(rx_buff, CODE, sizeof(CODE), "\",",configData->code);
-	configData->trafoParameters.Vinp.max=parseRxInteger(rx_buff, VINP_MAX, sizeof(VINP_MAX), ".00,");
-	configData->trafoParameters.Vinp.min=parseRxInteger(rx_buff, VINP_MIN, sizeof(VINP_MIN), ".00,");
-	configData->trafoParameters.Voutp.max=parseRxInteger(rx_buff, VOUTP_MAX, sizeof(VOUTP_MAX), ".00,");
-	configData->trafoParameters.Voutp.min=parseRxInteger(rx_buff, VOUTP_MIN, sizeof(VOUTP_MIN), ".00,");
-	configData->trafoParameters.Ip.max=parseRxInteger(rx_buff, IP_MAX, sizeof(IP_MAX), ".00,");
-	configData->trafoParameters.Ip.min=parseRxInteger(rx_buff, IP_MIN, sizeof(IP_MIN), ".00,");
-	configData->trafoParameters.Vins.max=parseRxInteger(rx_buff, VINS_MAX, sizeof(VINS_MAX), ".00,")*100;
-	configData->trafoParameters.Vins.min=parseRxInteger(rx_buff, VINS_MIN, sizeof(VINS_MIN), ".00,")*100;
-	configData->trafoParameters.Vouts.max=parseRxInteger(rx_buff, VOUTS_MAX, sizeof(VOUTS_MAX), ".00,")*100;
-	configData->trafoParameters.Vouts.min=parseRxInteger(rx_buff, VOUTS_MIN, sizeof(VOUTS_MIN), ".00,")*100;
-	configData->trafoParameters.Is.min=parseRxInteger(rx_buff, IS_MIN, sizeof(IS_MIN), ".00,");
-	configData->trafoParameters.Is.max=parseRxInteger(rx_buff, IS_MAX, sizeof(IS_MAX), ".00}");
+	if ((configData->trafoParameters.Vinp.max=parseRxInteger(rx_buff, VINP_MAX, sizeof(VINP_MAX), ".00,")) == -1) return ESP_FAIL;
+	if ((configData->trafoParameters.Vinp.min=parseRxInteger(rx_buff, VINP_MIN, sizeof(VINP_MIN), ".00,")) == -1) return ESP_FAIL;
+	if ((configData->trafoParameters.Voutp.max=parseRxInteger(rx_buff, VOUTP_MAX, sizeof(VOUTP_MAX), ".00,")) == -1) return ESP_FAIL;
+	if ((configData->trafoParameters.Voutp.min=parseRxInteger(rx_buff, VOUTP_MIN, sizeof(VOUTP_MIN), ".00,")) == -1) return ESP_FAIL;
+	if ((configData->trafoParameters.Ip.max=parseRxInteger(rx_buff, IP_MAX, sizeof(IP_MAX), ".00,")) == -1) return ESP_FAIL;
+	if ((configData->trafoParameters.Ip.min=parseRxInteger(rx_buff, IP_MIN, sizeof(IP_MIN), ".00,")) == -1) return ESP_FAIL;
+	if ((configData->trafoParameters.Vins.max=parseRxInteger(rx_buff, VINS_MAX, sizeof(VINS_MAX), ".00,")*100) == -100) return ESP_FAIL;
+	if ((configData->trafoParameters.Vins.min=parseRxInteger(rx_buff, VINS_MIN, sizeof(VINS_MIN), ".00,")*100) == -100) return ESP_FAIL;
+	if ((configData->trafoParameters.Vouts.max=parseRxInteger(rx_buff, VOUTS_MAX, sizeof(VOUTS_MAX), ".00,")*100) == -100) return ESP_FAIL;
+	if ((configData->trafoParameters.Vouts.min=parseRxInteger(rx_buff, VOUTS_MIN, sizeof(VOUTS_MIN), ".00,")*100) == -100) return ESP_FAIL;
+	if ((configData->trafoParameters.Is.min=parseRxInteger(rx_buff, IS_MIN, sizeof(IS_MIN), ".00,")) == -1) return ESP_FAIL;
+	if ((configData->trafoParameters.Is.max=parseRxInteger(rx_buff, IS_MAX, sizeof(IS_MAX), ".00}")) == -1) return ESP_FAIL;
+
+	return ESP_OK;
 }
 
 void processTxData(char* tx_buff, configData_t *configData, test_status_t *test_status)
