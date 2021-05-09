@@ -146,6 +146,9 @@ void checkTafo_task (void*arg)
 				break;
 			}
 			else if (test_fsm_state == MEASURE_PRIMARY) {
+				// if current is less than 20 mA -> discard measure
+				if (rms.Ip < 20)
+					rms.Ip = 0;
 				deviceControl.test_status.Ip = rms.Ip;
 				deviceControl.test_status.Vouts = rms.Vs;
 				deviceControl.test_status.Vinp = rms.Vp;
@@ -162,6 +165,9 @@ void checkTafo_task (void*arg)
 				if(deviceControl.test_mode == DETAILED_TEST_MODE) appLcdSend(MEASURING_PRIMARY, &rms);
 			}
 			else if (test_fsm_state == MEASURE_SECONDARY) {
+				// if current is less than 20 mA -> discard measure
+				if (rms.Is < 20)
+					rms.Is = 0;
 				deviceControl.test_status.Is = rms.Is;
 				deviceControl.test_status.Voutp = rms.Vp;
 				deviceControl.test_status.Vins = rms.Vs;
@@ -460,6 +466,9 @@ void fsm_task (void*arg)
 			vTaskDelayUntil(&xLastWakeTime, LCD_MSG_WAIT);
 			appLcdSend(WAITING_TEST, &deviceControl.configData);
 			deviceControl.test_fsm_state = WAIT_TEST;
+			break;
+		case BLOCK_DEVICE:
+			vTaskDelay(100 / portTICK_PERIOD_MS);
 			break;
 		default:
 			// It should not happen
